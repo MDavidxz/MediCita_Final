@@ -1,0 +1,948 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Mi Disponibilidad | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout ── */
+.disp-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+@media (max-width: 768px) { .disp-layout { grid-template-columns: 1fr; } }
+
+.section-card {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 18px;
+    padding: 1.5rem;
+    box-shadow: var(--mc-shadow-sm);
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--mc-text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+/* ── Calendario ── */
+.disp-cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.disp-cal-nav {
+    background: var(--mc-surface-2);
+    border: 1px solid var(--mc-border);
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--mc-text-muted);
+    font-size: .8rem;
+    transition: var(--mc-transition);
+}
+.disp-cal-nav:hover {
+    background: var(--mc-primary-soft);
+    color: var(--mc-primary);
+    border-color: var(--mc-primary);
+}
+
+.disp-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.disp-cal-day-header {
+    text-align: center;
+    font-size: .7rem;
+    font-weight: 700;
+    color: var(--mc-text-muted);
+    padding: 4px 0;
+    text-transform: uppercase;
+}
+
+.disp-cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: .82rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all .15s ease;
+    color: var(--mc-text);
+    position: relative;
+    min-height: 36px;
+}
+
+.disp-cal-day.past {
+    opacity: .25;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+.disp-cal-day.empty { pointer-events: none; }
+
+.disp-cal-day.disponible {
+    background: var(--mc-primary-soft);
+    border-color: var(--mc-primary);
+    color: var(--mc-primary);
+    font-weight: 700;
+}
+.disp-cal-day.disponible:hover {
+    background: var(--mc-primary);
+    color: #fff;
+}
+
+.disp-cal-day.bloqueado {
+    background: var(--mc-danger-soft);
+    border-color: var(--mc-danger);
+    color: var(--mc-danger);
+    font-weight: 700;
+}
+.disp-cal-day.bloqueado:hover {
+    background: var(--mc-danger);
+    color: #fff;
+}
+
+.disp-cal-day.libre:hover {
+    background: var(--mc-surface-2);
+    border-color: var(--mc-border);
+}
+
+/* ── Panel de horario ── */
+.horario-panel {
+    background: var(--mc-surface-2);
+    border: 1px solid var(--mc-border);
+    border-radius: 14px;
+    padding: 1.25rem;
+    min-height: 280px;
+    transition: var(--mc-transition);
+}
+
+.horario-panel.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--mc-text-muted);
+}
+
+.turno-block {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: .75rem;
+    transition: opacity .2s ease;
+}
+.turno-block.turno-disabled {
+    opacity: .5;
+}
+
+.turno-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--mc-text-muted);
+    margin-bottom: 8px;
+}
+
+/* ── Select de hora en lugar de input time ── */
+.hora-select {
+    background: var(--mc-surface-2);
+    border: 1.5px solid var(--mc-border);
+    border-radius: 8px;
+    color: var(--mc-text);
+    padding: 7px 10px;
+    font-size: .875rem;
+    font-weight: 600;
+    width: 100%;
+    transition: var(--mc-transition);
+    cursor: pointer;
+    appearance: auto;
+}
+.hora-select:focus {
+    border-color: var(--mc-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--mc-primary-soft);
+    background: var(--mc-surface);
+}
+.hora-select:disabled {
+    cursor: not-allowed;
+    opacity: .5;
+}
+
+/* ── Leyenda ── */
+.leyenda {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .78rem;
+    color: var(--mc-text-muted);
+}
+.leyenda-dot {
+    width: 14px; height: 14px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+/* ── Toggle switch ── */
+.toggle-switch { position:relative; display:inline-block; width:44px; height:24px; }
+.toggle-switch input { opacity:0; width:0; height:0; }
+.toggle-slider {
+    position:absolute; cursor:pointer; inset:0;
+    background:var(--mc-border); border-radius:24px; transition:.3s;
+}
+.toggle-slider::before {
+    content:''; position:absolute;
+    height:18px; width:18px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:.3s;
+}
+input:checked + .toggle-slider { background:var(--mc-primary); }
+input:checked + .toggle-slider::before { transform:translateX(20px); }
+
+/* Slots preview */
+.slots-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: .75rem;
+}
+.slot-chip {
+    background: var(--mc-primary-soft);
+    color: var(--mc-primary);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: .75rem;
+    font-weight: 600;
+}
+
+/* ── Resumen de horarios ── */
+.resumen-section {
+    margin-top: 2rem;
+}
+
+.resumen-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: .85rem;
+}
+.resumen-table th {
+    background: var(--mc-surface-2);
+    color: var(--mc-text-muted);
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--mc-border);
+}
+.resumen-table td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--mc-border);
+    color: var(--mc-text);
+    vertical-align: middle;
+}
+.resumen-table tr:last-child td { border-bottom: none; }
+.resumen-table tr:hover td { background: var(--mc-surface-2); }
+
+.badge-turno {
+    display: inline-block;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: .72rem;
+    font-weight: 700;
+    margin-right: 4px;
+}
+.badge-manana {
+    background: #fef3c7;
+    color: #92400e;
+}
+.badge-tarde {
+    background: #ede9fe;
+    color: #4c1d95;
+}
+
+/* Alerta bloqueo automático */
+.alerta-bloqueo {
+    background: var(--mc-danger-soft);
+    border: 1px solid var(--mc-danger);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    font-size: .82rem;
+    color: var(--mc-danger);
+    display: none;
+    margin-bottom: .75rem;
+}
+.alerta-bloqueo.visible { display: flex; align-items: center; gap: .5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:1100px;margin:0 auto;">
+
+    <!-- Cabecera -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1" style="color:var(--mc-text);">Mi Disponibilidad</h3>
+            <p class="small mb-0" style="color:var(--mc-text-muted);">
+                Haz clic en los días para marcarlos como disponible o bloqueado.
+            </p>
+        </div>
+        <a href="{% url 'citas:home_medico' %}" class="btn btn-outline-secondary rounded-pill btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Volver al inicio
+        </a>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show rounded-3 mb-3">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="disp-layout">
+
+        <!-- ══ COLUMNA IZQUIERDA: CALENDARIO ══ -->
+        <div>
+            <div class="section-card">
+                <div class="section-title">
+                    <i class="fas fa-calendar-alt" style="color:var(--mc-primary);"></i>
+                    Calendario de disponibilidad
+                </div>
+
+                <!-- Leyenda -->
+                <div class="leyenda">
+                    <div class="leyenda-item">
+                        <div class="leyenda-dot" style="background:var(--mc-primary-soft);border:1.5px solid var(--mc-primary);"></div>
+                        <span>Disponible</span>
+                    </div>
+                    <div class="leyenda-item">
+                        <div class="leyenda-dot" style="background:var(--mc-danger-soft);border:1.5px solid var(--mc-danger);"></div>
+                        <span>Bloqueado</span>
+                    </div>
+                    <div class="leyenda-item">
+                        <div class="leyenda-dot" style="background:var(--mc-surface-2);border:1.5px solid var(--mc-border);"></div>
+                        <span>Sin definir</span>
+                    </div>
+                </div>
+
+                <!-- Navegación -->
+                <div class="disp-cal-header">
+                    <button class="disp-cal-nav" onclick="prevMonthDisp()">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <h6 class="fw-bold mb-0" id="disp-cal-title" style="color:var(--mc-text);"></h6>
+                    <button class="disp-cal-nav" onclick="nextMonthDisp()">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="disp-cal-grid" id="disp-cal-grid"></div>
+
+                <div class="mt-3 p-3 rounded-3" style="background:var(--mc-primary-light);border:1px solid var(--mc-primary-soft);">
+                    <p class="small mb-0" style="color:var(--mc-text-muted);">
+                        <i class="fas fa-info-circle me-1" style="color:var(--mc-primary);"></i>
+                        <strong>Click 1:</strong> Disponible &nbsp;|&nbsp;
+                        <strong>Click 2:</strong> Bloqueado &nbsp;|&nbsp;
+                        <strong>Click 3:</strong> Sin definir
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ COLUMNA DERECHA: HORARIO DEL DÍA ══ -->
+        <div>
+            <div class="section-card" style="position:sticky;top:80px;">
+                <div class="section-title">
+                    <i class="fas fa-clock" style="color:var(--mc-primary);"></i>
+                    <span id="horario-title">Horario del día</span>
+                </div>
+
+                <div class="horario-panel empty-state" id="horario-panel">
+                    <i class="fas fa-calendar-day fa-3x mb-3" style="opacity:.2;"></i>
+                    <p class="mb-0">Selecciona un día disponible<br>para configurar su horario.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ══ RESUMEN DE HORARIOS ASIGNADOS ══ -->
+    <div class="resumen-section">
+        <div class="section-card">
+            <div class="section-title">
+                <i class="fas fa-table" style="color:var(--mc-primary);"></i>
+                Resumen de mis horarios
+            </div>
+
+            <div id="resumen-horarios">
+                <p class="small mb-0" style="color:var(--mc-text-muted);">
+                    <i class="fas fa-spinner fa-spin me-1"></i>Cargando...
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formularios ocultos -->
+    <form id="form-guardar-horario" method="POST" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="accion" value="guardar_horario">
+    </form>
+
+    <form id="form-estado-dia" method="POST" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" id="fed-fecha" name="fecha">
+        <input type="hidden" id="fed-estado" name="estado">
+        <input type="hidden" name="accion" value="estado_dia">
+    </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ══════════════════════════════════════════════════════════
+// DATOS DEL SERVIDOR
+// ══════════════════════════════════════════════════════════
+const medicoId = {{ medico.id }};
+
+let diasEstado        = {};
+let horariosGuardados = {};
+
+{% for item in dias_estado_json %}
+    diasEstado["{{ item.fecha }}"] = "{{ item.estado }}";
+{% endfor %}
+{% for item in horarios_json %}
+    horariosGuardados["{{ item.fecha }}"] = {
+        inicio_m: "{{ item.inicio_m }}",
+        fin_m:    "{{ item.fin_m }}",
+        inicio_t: "{{ item.inicio_t }}",
+        fin_t:    "{{ item.fin_t }}",
+    };
+{% endfor %}
+
+// ══════════════════════════════════════════════════════════
+// GENERADOR DE OPCIONES DE HORA (múltiplos de 15 min)
+// ══════════════════════════════════════════════════════════
+/**
+ * Genera un <select> con horas en múltiplos de 15 min.
+ * @param {string} id        - id del elemento
+ * @param {string} value     - hora seleccionada "HH:MM"
+ * @param {number} minH      - hora mínima (ej: 7)
+ * @param {number} maxH      - hora máxima incluida (ej: 12)
+ * @param {string} onChange  - código JS a ejecutar en onchange
+ */
+function buildHoraSelect(id, value, minH, maxH, onChange) {
+    let options = '';
+    for (let h = minH; h <= maxH; h++) {
+        const minutosMax = (h === maxH) ? 0 : 45; // en la hora máxima solo el :00
+        for (let m = 0; m <= minutosMax; m += 15) {
+            // Evitar que :15 :30 :45 aparezcan en la hora máxima
+            if (h === maxH && m > 0) continue;
+            const hStr = String(h).padStart(2, '0');
+            const mStr = String(m).padStart(2, '0');
+            const val  = `${hStr}:${mStr}`;
+            const sel  = val === value ? 'selected' : '';
+            options += `<option value="${val}" ${sel}>${val}</option>`;
+        }
+    }
+    return `<select id="${id}" class="hora-select" onchange="${onChange}">${options}</select>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// CALENDARIO
+// ══════════════════════════════════════════════════════════
+let currentDispDate = new Date();
+currentDispDate.setDate(1);
+let diaSeleccionado = null;
+
+const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const dayNames   = ['L','M','M','J','V','S','D'];
+
+function renderCalendarioDisp() {
+    const grid    = document.getElementById('disp-cal-grid');
+    const titleEl = document.getElementById('disp-cal-title');
+    grid.innerHTML = '';
+
+    const year  = currentDispDate.getFullYear();
+    const month = currentDispDate.getMonth();
+    titleEl.textContent = `${monthNames[month]} ${year}`;
+
+    dayNames.forEach(d => {
+        const h = document.createElement('div');
+        h.className   = 'disp-cal-day-header';
+        h.textContent = d;
+        grid.appendChild(h);
+    });
+
+    const firstDay    = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+    const today       = new Date(); today.setHours(0,0,0,0);
+
+    for (let i = 0; i < startOffset; i++) {
+        const e = document.createElement('div');
+        e.className = 'disp-cal-day empty';
+        grid.appendChild(e);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const dayDate = new Date(year, month, day);
+        const isSun   = dayDate.getDay() === 0;
+
+        const el = document.createElement('div');
+        el.dataset.date = dateStr;
+        el.textContent  = day;
+
+        if (dayDate < today || isSun) {
+            el.className = 'disp-cal-day past';
+        } else {
+            const estado = diasEstado[dateStr];
+            el.className = 'disp-cal-day libre';
+            if (estado === 'disponible') el.classList.add('disponible');
+            else if (estado === 'bloqueado') el.classList.add('bloqueado');
+
+            if (dateStr === diaSeleccionado) {
+                el.style.outline = '2.5px solid var(--mc-text)';
+                el.style.outlineOffset = '2px';
+            }
+
+            el.addEventListener('click', () => clickDia(dateStr, el));
+        }
+        grid.appendChild(el);
+    }
+}
+
+function clickDia(dateStr, el) {
+    const actual = diasEstado[dateStr];
+
+    let nuevoEstado;
+    if (!actual || actual === 'libre') {
+        nuevoEstado = 'disponible';
+    } else if (actual === 'disponible') {
+        nuevoEstado = 'bloqueado';
+    } else {
+        nuevoEstado = 'libre';
+    }
+
+    diasEstado[dateStr] = nuevoEstado;
+    guardarEstadoDia(dateStr, nuevoEstado);
+
+    el.className = 'disp-cal-day libre';
+    if (nuevoEstado === 'disponible') el.classList.add('disponible');
+    else if (nuevoEstado === 'bloqueado') el.classList.add('bloqueado');
+
+    if (nuevoEstado === 'disponible') {
+        seleccionarDia(dateStr);
+    } else {
+        if (diaSeleccionado === dateStr) {
+            diaSeleccionado = null;
+            mostrarPanelVacio();
+        }
+    }
+
+    renderResumenHorarios();
+}
+
+function seleccionarDia(dateStr) {
+    diaSeleccionado = dateStr;
+    renderCalendarioDisp();
+    mostrarPanelHorario(dateStr);
+}
+
+async function guardarEstadoDia(dateStr, estado) {
+    const form = document.getElementById('form-estado-dia');
+    document.getElementById('fed-fecha').value  = dateStr;
+    document.getElementById('fed-estado').value = estado;
+    const formData = new FormData(form);
+    try {
+        await fetch(window.location.href, { method: 'POST', body: formData });
+    } catch (e) {
+        console.error('Error guardando estado del día:', e);
+    }
+}
+
+function prevMonthDisp() {
+    currentDispDate.setMonth(currentDispDate.getMonth() - 1);
+    renderCalendarioDisp();
+}
+function nextMonthDisp() {
+    currentDispDate.setMonth(currentDispDate.getMonth() + 1);
+    renderCalendarioDisp();
+}
+
+// ══════════════════════════════════════════════════════════
+// PANEL DE HORARIO
+// ══════════════════════════════════════════════════════════
+function mostrarPanelVacio() {
+    const panel = document.getElementById('horario-panel');
+    document.getElementById('horario-title').textContent = 'Horario del día';
+    panel.className = 'horario-panel empty-state';
+    panel.innerHTML = `
+        <i class="fas fa-calendar-day fa-3x mb-3" style="opacity:.2;"></i>
+        <p class="mb-0">Selecciona un día disponible<br>para configurar su horario.</p>
+    `;
+}
+
+function mostrarPanelHorario(dateStr) {
+    const panel  = document.getElementById('horario-panel');
+    const saved  = horariosGuardados[dateStr] || {};
+    const dateObj = new Date(dateStr + 'T00:00:00');
+    const label   = dateObj.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'long' });
+
+    document.getElementById('horario-title').textContent =
+        label.charAt(0).toUpperCase() + label.slice(1);
+    panel.className = 'horario-panel';
+
+    const tieneMananaGuardado = !!(saved.inicio_m);
+    const tieneTardeGuardado  = !!(saved.inicio_t);
+
+    // Valores por defecto con múltiplos de 15
+    const defInicioM = saved.inicio_m || '07:00';
+    const defFinM    = saved.fin_m    || '12:00';
+    const defInicioT = saved.inicio_t || '14:00';
+    const defFinT    = saved.fin_t    || '18:00';
+
+    panel.innerHTML = `
+        <form id="form-horario-dia" onsubmit="guardarHorarioDia(event, '${dateStr}')">
+
+            <!-- Alerta cuando ambos turnos se desactivan -->
+            <div class="alerta-bloqueo" id="alerta-bloqueo">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Sin turnos activos este día quedará <strong>bloqueado</strong> automáticamente.</span>
+            </div>
+
+            <!-- Turno mañana -->
+            <div class="turno-block" id="block-manana">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="turno-label">
+                        <i class="fas fa-sun me-1" style="color:#f59e0b;"></i>Turno mañana
+                    </div>
+                    <label class="toggle-switch mb-0">
+                        <input type="checkbox" id="toggle-manana"
+                               ${tieneMananaGuardado || !tieneTardeGuardado ? 'checked' : ''}
+                               onchange="toggleTurno('manana', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="campos-manana" class="d-flex align-items-center gap-2"
+                     style="${tieneMananaGuardado || !tieneTardeGuardado ? '' : 'display:none'}">
+                    <div style="flex:1;">
+                        <label style="font-size:.72rem;color:var(--mc-text-muted);">Desde</label>
+                        ${buildHoraSelect('inicio-manana', defInicioM, 7, 12, 'actualizarPreview()')}
+                    </div>
+                    <span style="color:var(--mc-text-muted);padding-top:18px;">—</span>
+                    <div style="flex:1;">
+                        <label style="font-size:.72rem;color:var(--mc-text-muted);">Hasta</label>
+                        ${buildHoraSelect('fin-manana', defFinM, 7, 12, 'actualizarPreview()')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Turno tarde -->
+            <div class="turno-block" id="block-tarde">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="turno-label">
+                        <i class="fas fa-moon me-1" style="color:#6366f1;"></i>Turno tarde
+                    </div>
+                    <label class="toggle-switch mb-0">
+                        <input type="checkbox" id="toggle-tarde"
+                               ${tieneTardeGuardado ? 'checked' : ''}
+                               onchange="toggleTurno('tarde', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div id="campos-tarde" class="d-flex align-items-center gap-2"
+                     style="${tieneTardeGuardado ? '' : 'display:none'}">
+                    <div style="flex:1;">
+                        <label style="font-size:.72rem;color:var(--mc-text-muted);">Desde</label>
+                        ${buildHoraSelect('inicio-tarde', defInicioT, 12, 20, 'actualizarPreview()')}
+                    </div>
+                    <span style="color:var(--mc-text-muted);padding-top:18px;">—</span>
+                    <div style="flex:1;">
+                        <label style="font-size:.72rem;color:var(--mc-text-muted);">Hasta</label>
+                        ${buildHoraSelect('fin-tarde', defFinT, 12, 20, 'actualizarPreview()')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview slots -->
+            <div class="mt-2 mb-3">
+                <p class="small fw-semibold mb-2" style="color:var(--mc-text-muted);">
+                    <i class="fas fa-list me-1"></i>Slots de 30 min que se generarán:
+                </p>
+                <div class="slots-preview" id="slots-preview"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 rounded-pill fw-semibold">
+                <i class="fas fa-save me-2"></i>Guardar horario de este día
+            </button>
+        </form>
+    `;
+
+    // Iniciar estado visual correcto de los bloques
+    verificarEstadoTurnos();
+    actualizarPreview();
+}
+
+/**
+ * Verifica si ambos turnos están desactivados:
+ * si es así muestra la alerta y bloquea el día en el calendario.
+ */
+function verificarEstadoTurnos() {
+    const chkM = document.getElementById('toggle-manana');
+    const chkT = document.getElementById('toggle-tarde');
+    if (!chkM || !chkT) return;
+
+    const mActivo = chkM.checked;
+    const tActivo = chkT.checked;
+    const alerta  = document.getElementById('alerta-bloqueo');
+
+    if (!mActivo && !tActivo) {
+        // Mostrar alerta
+        if (alerta) alerta.classList.add('visible');
+
+        // Bloquear automáticamente el día
+        if (diaSeleccionado) {
+            diasEstado[diaSeleccionado] = 'bloqueado';
+            guardarEstadoDia(diaSeleccionado, 'bloqueado');
+            renderCalendarioDisp();
+            // No cerrar el panel para que pueda reactivar un turno
+        }
+    } else {
+        if (alerta) alerta.classList.remove('visible');
+        // Si el día estaba bloqueado por esta razón, restaurar a disponible
+        if (diaSeleccionado && diasEstado[diaSeleccionado] === 'bloqueado') {
+            diasEstado[diaSeleccionado] = 'disponible';
+            guardarEstadoDia(diaSeleccionado, 'disponible');
+            renderCalendarioDisp();
+        }
+    }
+
+    renderResumenHorarios();
+}
+
+function toggleTurno(turno, activo) {
+    const campos = document.getElementById(`campos-${turno}`);
+    const block  = document.getElementById(`block-${turno}`);
+
+    if (activo) {
+        campos.style.removeProperty('display');
+        if (block) block.classList.remove('turno-disabled');
+    } else {
+        campos.style.display = 'none';
+        if (block) block.classList.add('turno-disabled');
+    }
+
+    verificarEstadoTurnos();
+    actualizarPreview();
+}
+
+function generarSlots(inicio, fin) {
+    const slots = [];
+    if (!inicio || !fin) return slots;
+    const [hI, mI] = inicio.split(':').map(Number);
+    const [hF, mF] = fin.split(':').map(Number);
+    let minActual  = hI * 60 + mI;
+    const minFin   = hF * 60 + mF;
+    while (minActual < minFin) {
+        const h = String(Math.floor(minActual / 60)).padStart(2,'0');
+        const m = String(minActual % 60).padStart(2,'0');
+        slots.push(`${h}:${m}`);
+        minActual += 30;
+    }
+    return slots;
+}
+
+function actualizarPreview() {
+    const preview = document.getElementById('slots-preview');
+    if (!preview) return;
+
+    const tieneMañana = document.getElementById('toggle-manana')?.checked;
+    const tieneTarde  = document.getElementById('toggle-tarde')?.checked;
+
+    const inicioM = document.getElementById('inicio-manana')?.value;
+    const finM    = document.getElementById('fin-manana')?.value;
+    const inicioT = document.getElementById('inicio-tarde')?.value;
+    const finT    = document.getElementById('fin-tarde')?.value;
+
+    let slots = [];
+    if (tieneMañana && inicioM && finM) slots = slots.concat(generarSlots(inicioM, finM));
+    if (tieneTarde  && inicioT && finT) slots = slots.concat(generarSlots(inicioT, finT));
+
+    if (slots.length === 0) {
+        preview.innerHTML = '<span style="color:var(--mc-text-muted);font-size:.78rem;">Sin slots definidos</span>';
+    } else {
+        preview.innerHTML = slots.map(s => `<span class="slot-chip">${s}</span>`).join('');
+    }
+}
+
+async function guardarHorarioDia(event, dateStr) {
+    event.preventDefault();
+
+    const tieneMañana = document.getElementById('toggle-manana').checked;
+    const tieneTarde  = document.getElementById('toggle-tarde').checked;
+
+    // Si ambos desactivados no guardar horario (ya quedó bloqueado)
+    if (!tieneMañana && !tieneTarde) {
+        alert('Activa al menos un turno para guardar. El día ha sido bloqueado automáticamente.');
+        return;
+    }
+
+    const inicioM = tieneMañana ? document.getElementById('inicio-manana').value : '';
+    const finM    = tieneMañana ? document.getElementById('fin-manana').value    : '';
+    const inicioT = tieneTarde  ? document.getElementById('inicio-tarde').value  : '';
+    const finT    = tieneTarde  ? document.getElementById('fin-tarde').value     : '';
+
+    // Validar que inicio < fin
+    if (tieneMañana && inicioM >= finM) {
+        alert('Turno mañana: la hora de inicio debe ser anterior a la de fin.');
+        return;
+    }
+    if (tieneTarde && inicioT >= finT) {
+        alert('Turno tarde: la hora de inicio debe ser anterior a la de fin.');
+        return;
+    }
+
+    horariosGuardados[dateStr] = { inicio_m: inicioM, fin_m: finM, inicio_t: inicioT, fin_t: finT };
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', getCsrfToken());
+    formData.append('accion', 'guardar_horario_dia');
+    formData.append('fecha', dateStr);
+    formData.append('hora_inicio_manana', inicioM);
+    formData.append('hora_fin_manana', finM);
+    formData.append('hora_inicio_tarde', inicioT);
+    formData.append('hora_fin_tarde', finT);
+
+    try {
+        const resp = await fetch(window.location.href, { method: 'POST', body: formData });
+        if (resp.ok) {
+            const btn  = event.target.querySelector('button[type=submit]');
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check me-2"></i>¡Guardado!';
+            btn.style.background = 'var(--mc-success)';
+            setTimeout(() => {
+                btn.innerHTML = orig;
+                btn.style.background = '';
+            }, 2000);
+
+            // Actualizar resumen
+            renderResumenHorarios();
+        }
+    } catch (e) {
+        console.error('Error guardando horario:', e);
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+// RESUMEN DE HORARIOS
+// ══════════════════════════════════════════════════════════
+function renderResumenHorarios() {
+    const container = document.getElementById('resumen-horarios');
+    if (!container) return;
+
+    // Filtrar solo los días marcados como disponibles que tengan horario
+    const dias = Object.entries(diasEstado)
+        .filter(([fecha, estado]) => estado === 'disponible')
+        .sort(([a], [b]) => a.localeCompare(b));
+
+    if (dias.length === 0) {
+        container.innerHTML = `
+            <p class="small mb-0" style="color:var(--mc-text-muted);">
+                <i class="fas fa-info-circle me-1"></i>
+                No tienes días disponibles configurados aún.
+            </p>`;
+        return;
+    }
+
+    let html = `
+        <div style="overflow-x:auto;">
+        <table class="resumen-table">
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Día</th>
+                    <th>Turno mañana</th>
+                    <th>Turno tarde</th>
+                    <th>Slots disponibles</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    dias.forEach(([fecha]) => {
+        const h = horariosGuardados[fecha] || {};
+        const dateObj = new Date(fecha + 'T00:00:00');
+        const diaSem  = dateObj.toLocaleDateString('es-ES', { weekday: 'long' });
+        const diaNum  = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        // Turno mañana
+        const mañana = h.inicio_m && h.fin_m
+            ? `<span class="badge-turno badge-manana"><i class="fas fa-sun me-1"></i>${h.inicio_m} – ${h.fin_m}</span>`
+            : '<span style="color:var(--mc-text-muted);font-size:.78rem;">—</span>';
+
+        // Turno tarde
+        const tarde = h.inicio_t && h.fin_t
+            ? `<span class="badge-turno badge-tarde"><i class="fas fa-moon me-1"></i>${h.inicio_t} – ${h.fin_t}</span>`
+            : '<span style="color:var(--mc-text-muted);font-size:.78rem;">—</span>';
+
+        // Contar slots
+        let slotsM = h.inicio_m && h.fin_m ? generarSlots(h.inicio_m, h.fin_m) : [];
+        let slotsT = h.inicio_t && h.fin_t ? generarSlots(h.inicio_t, h.fin_t) : [];
+        const total = slotsM.length + slotsT.length;
+        const slotsLabel = total > 0
+            ? `<span class="slot-chip">${total} slots</span>`
+            : '<span style="color:var(--mc-text-muted);font-size:.78rem;">Sin definir</span>';
+
+        html += `
+            <tr>
+                <td><strong>${diaNum}</strong></td>
+                <td style="text-transform:capitalize;">${diaSem}</td>
+                <td>${mañana}</td>
+                <td>${tarde}</td>
+                <td>${slotsLabel}</td>
+            </tr>
+        `;
+    });
+
+    html += '</tbody></table></div>';
+    container.innerHTML = html;
+}
+
+function getCsrfToken() {
+    const c = document.cookie.split(';').find(c => c.trim().startsWith('csrftoken='));
+    return c ? c.trim().split('=')[1] : '';
+}
+
+// Iniciar
+renderCalendarioDisp();
+renderResumenHorarios();
+</script>
+{% endblock %}

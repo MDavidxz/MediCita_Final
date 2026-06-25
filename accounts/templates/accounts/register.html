@@ -1,0 +1,729 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crear Cuenta | MediCita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --brand:       #0F4276;
+      --brand-mid:   #1a5fa8;
+      --brand-light: #e8f0fb;
+      --success:     #16a34a;
+      --success-bg:  #dcfce7;
+      --danger:      #dc2626;
+      --danger-bg:   #fee2e2;
+      --warn:        #d97706;
+      --warn-bg:     #fef3c7;
+      --text:        #0f172a;
+      --muted:       #64748b;
+      --border:      #e2e8f0;
+      --surface:     #f8fafc;
+      --radius:      12px;
+      --radius-sm:   8px;
+      --shadow:      0 4px 24px rgba(15,66,118,.10);
+      --transition:  .18s ease;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: url('{% static "accounts/css/img/GdoGa.jpg" %}') center/cover no-repeat fixed;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    /* ── Overlay oscuro sobre la imagen ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: rgba(10,30,60,.55);
+      backdrop-filter: blur(3px);
+      z-index: 0;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: var(--shadow), 0 0 0 1px rgba(15,66,118,.06);
+      width: 100%;
+      max-width: 560px;
+      overflow: hidden;
+    }
+
+    /* ── Cabecera de la tarjeta ── */
+    .card-header {
+      background: linear-gradient(135deg, var(--brand) 0%, var(--brand-mid) 100%);
+      padding: 28px 32px 24px;
+      text-align: center;
+    }
+    .card-header img { width: 72px; margin-bottom: 12px; }
+    .card-header h1 {
+      color: #fff;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+    .card-header p {
+      color: rgba(255,255,255,.72);
+      font-size: .82rem;
+      margin-top: 4px;
+    }
+
+    /* ── Stepper ── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 20px 32px 0;
+    }
+    .step-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      position: relative;
+    }
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: .82rem;
+      color: var(--muted);
+      transition: var(--transition);
+      position: relative;
+      z-index: 1;
+    }
+    .step-label {
+      font-size: .7rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-align: center;
+      white-space: nowrap;
+      transition: var(--transition);
+    }
+    .step-node.active .step-circle {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+      box-shadow: 0 0 0 4px var(--brand-light);
+    }
+    .step-node.active .step-label { color: var(--brand); }
+    .step-node.done .step-circle {
+      background: var(--success);
+      border-color: var(--success);
+      color: #fff;
+    }
+    .step-node.done .step-label { color: var(--success); }
+    .step-connector {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin-bottom: 22px;
+      transition: background var(--transition);
+      max-width: 80px;
+    }
+    .step-connector.done { background: var(--success); }
+
+    /* ── Cuerpo del formulario ── */
+    .card-body {
+      padding: 24px 32px 28px;
+    }
+
+    .step-panel { display: none; }
+    .step-panel.active {
+      display: block;
+      animation: slideIn .22s ease both;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(18px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .step-panel.back-anim {
+      animation: slideBack .22s ease both;
+    }
+    @keyframes slideBack {
+      from { opacity: 0; transform: translateX(-18px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .panel-title {
+      font-size: .92rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .panel-sub {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* ── Grid de campos ── */
+    .form-row {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .form-row.cols-2 { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 480px) { .form-row.cols-2 { grid-template-columns: 1fr; } }
+
+    /* ── Campo individual ── */
+    .field { position: relative; }
+
+    .field label {
+      display: block;
+      font-size: .72rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      padding: 10px 38px 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: .875rem;
+      color: var(--text);
+      background: #fff;
+      transition: border-color var(--transition), box-shadow var(--transition);
+      outline: none;
+      appearance: none;
+    }
+    .field select { padding-right: 32px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+
+    .field input:focus,
+    .field select:focus {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px var(--brand-light);
+    }
+
+    /* Estado válido */
+    .field.valid input,
+    .field.valid select {
+      border-color: var(--success);
+    }
+    .field.valid input:focus,
+    .field.valid select:focus {
+      box-shadow: 0 0 0 3px var(--success-bg);
+    }
+    /* Estado inválido */
+    .field.invalid input,
+    .field.invalid select {
+      border-color: var(--danger);
+    }
+    .field.invalid input:focus,
+    .field.invalid select:focus {
+      box-shadow: 0 0 0 3px var(--danger-bg);
+    }
+
+    /* Icono check / x dentro del input */
+    .field-icon {
+      position: absolute;
+      right: 11px;
+      top: 33px;
+      font-size: .8rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity var(--transition);
+    }
+    .field.valid   .field-icon { color: var(--success); opacity: 1; }
+    .field.invalid .field-icon { color: var(--danger);  opacity: 1; }
+
+    /* Mensaje de error/ayuda */
+    .field-msg {
+      font-size: .72rem;
+      margin-top: 5px;
+      min-height: 16px;
+      display: none;
+    }
+    .field.invalid .field-msg { display: block; color: var(--danger); }
+    .field-hint {
+      font-size: .71rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Botones de navegación ── */
+    .nav-btns {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 24px;
+      gap: 12px;
+    }
+
+    .btn {
+      font-family: inherit;
+      font-size: .875rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 50px;
+      padding: 11px 24px;
+      cursor: pointer;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 3px 12px rgba(15,66,118,.25);
+    }
+    .btn-primary:hover {
+      background: var(--brand-mid);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(15,66,118,.3);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover {
+      background: var(--surface);
+      color: var(--text);
+      border-color: #c8d3e0;
+    }
+    .btn-success {
+      background: var(--success);
+      color: #fff;
+      box-shadow: 0 3px 12px rgba(22,163,74,.25);
+    }
+    .btn-success:hover {
+      background: #15803d;
+      transform: translateY(-1px);
+    }
+
+    /* ── Link al login ── */
+    .login-link {
+      text-align: center;
+      font-size: .8rem;
+      color: var(--muted);
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .login-link a {
+      color: var(--brand);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .login-link a:hover { text-decoration: underline; }
+
+    /* ── Flatpickr overrides ── */
+    .flatpickr-calendar {
+      font-family: 'Inter', sans-serif !important;
+      border-radius: 14px !important;
+      box-shadow: 0 8px 32px rgba(15,66,118,.15) !important;
+      border: 1px solid var(--border) !important;
+    }
+    .flatpickr-day.selected { background: var(--brand) !important; border-color: var(--brand) !important; }
+    .flatpickr-day:hover    { background: var(--brand-light) !important; color: var(--brand) !important; }
+    .flatpickr-current-month { color: var(--brand) !important; font-weight: 700 !important; }
+
+    /* ── Indicador de fortaleza de contraseña ── */
+    .pass-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .pass-bar {
+      flex: 1;
+      height: 4px;
+      border-radius: 4px;
+      background: var(--border);
+      transition: background var(--transition);
+    }
+    .pass-label { font-size: .7rem; color: var(--muted); margin-top: 3px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Cabecera -->
+  <div class="card-header">
+    <img src="{% static 'accounts/css/img/x3Dom-removebg-preview.png' %}" alt="MediCita">
+    <h1>Crear cuenta</h1>
+    <p>Regístrate para agendar tus citas médicas</p>
+  </div>
+
+  <!-- Stepper -->
+  <div class="stepper">
+    <div class="step-node active" id="node-1">
+      <div class="step-circle" id="circle-1">1</div>
+      <span class="step-label">Identificación</span>
+    </div>
+    <div class="step-connector" id="connector-1"></div>
+    <div class="step-node" id="node-2">
+      <div class="step-circle" id="circle-2">2</div>
+      <span class="step-label">Contacto y acceso</span>
+    </div>
+  </div>
+
+  <!-- Cuerpo -->
+  <div class="card-body">
+    <form id="registerForm" method="POST" novalidate>
+      {% csrf_token %}
+
+      <!-- ════ PASO 1 ════ -->
+      <div class="step-panel active" id="panel-1">
+        <p class="panel-title">Datos de identificación</p>
+        <p class="panel-sub">Información básica para crear tu perfil médico.</p>
+
+        <div class="form-row cols-2">
+          <div class="field" id="f-first_name">
+            <label>Nombres <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="first_name" name="first_name" placeholder="Ej: María">
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-first_name">Solo letras, campo obligatorio.</div>
+          </div>
+          <div class="field" id="f-last_name">
+            <label>Apellidos <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="last_name" name="last_name" placeholder="Ej: García López">
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-last_name">Solo letras, campo obligatorio.</div>
+          </div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="field" id="f-fecha_nacimiento">
+            <label>Fecha de nacimiento <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/aaaa" readonly>
+            <span class="field-icon">✓</span>
+            <div class="field-hint">⚠ Debes ser mayor de 18 años.</div>
+            <div class="field-msg" id="msg-fecha_nacimiento">Debes ser mayor de 18 años.</div>
+          </div>
+          <div class="field" id="f-genero">
+            <label>Género <span style="color:var(--danger)">*</span></label>
+            <select id="genero" name="genero">
+              <option value="">Selecciona…</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Femenino">Femenino</option>
+              <option value="Otro">Prefiero no decir</option>
+            </select>
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-genero">Selecciona una opción.</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="field" id="f-cedula">
+            <label>Cédula de identidad <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="cedula" name="cedula" placeholder="Ej: 12345678 o 12345678-1E" maxlength="12">
+            <span class="field-icon">✓</span>
+            <div class="field-hint">Solo números. Puedes añadir guion y complemento al final (Ej: 1234567-2A).</div>
+            <div class="field-msg" id="msg-cedula">Formato inválido. Ej: 1234567 o 1234567-2A</div>
+          </div>
+        </div>
+
+        <div class="nav-btns" style="justify-content:flex-end;">
+          <button type="button" class="btn btn-primary" onclick="goToStep2()">
+            Siguiente paso <span style="font-size:1rem;">→</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ════ PASO 2 ════ -->
+      <div class="step-panel" id="panel-2">
+        <p class="panel-title">Contacto y acceso</p>
+        <p class="panel-sub">Tus datos de contacto y las credenciales para ingresar.</p>
+
+        <div class="form-row cols-2">
+          <div class="field" id="f-username">
+            <label>Usuario <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="username" name="username" placeholder="Ej: mgarcia" autocomplete="username">
+            <span class="field-icon">✓</span>
+            <div class="field-hint">Sin espacios ni caracteres especiales.</div>
+            <div class="field-msg" id="msg-username">Solo letras, números y guion bajo.</div>
+          </div>
+          <div class="field" id="f-email">
+            <label>Correo electrónico <span style="color:var(--danger)">*</span></label>
+            <input type="email" id="email" name="email" placeholder="tu@correo.com" autocomplete="email">
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-email">Ingresa un correo válido.</div>
+          </div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="field" id="f-telefono">
+            <label>Teléfono <span style="color:var(--danger)">*</span></label>
+            <input type="tel" id="telefono" name="telefono" placeholder="Ej: 70012345">
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-telefono">Campo obligatorio.</div>
+          </div>
+          <div class="field" id="f-direccion">
+            <label>Dirección <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="direccion" name="direccion" placeholder="Calle, Nro., Zona">
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-direccion">Campo obligatorio.</div>
+          </div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="field" id="f-contacto_emergencia">
+            <label>Contacto de emergencia <span style="color:var(--danger)">*</span></label>
+            <input type="text" id="contacto_emergencia" name="contacto_emergencia" placeholder="Nombre completo">
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-contacto_emergencia">Solo letras, campo obligatorio.</div>
+          </div>
+          <div class="field" id="f-numero_emergencia">
+            <label>Teléfono de emergencia <span style="color:var(--danger)">*</span></label>
+            <input type="tel" id="numero_emergencia" name="numero_emergencia" placeholder="Ej: 70098765">
+            <span class="field-icon">✓</span>
+            <div class="field-hint">No puede ser igual a tu teléfono.</div>
+            <div class="field-msg" id="msg-numero_emergencia">No puede coincidir con tu teléfono.</div>
+          </div>
+        </div>
+
+        <div class="form-row cols-2">
+          <div class="field" id="f-pass1">
+            <label>Contraseña <span style="color:var(--danger)">*</span></label>
+            <input type="password" id="pass1" name="password1" placeholder="Mínimo 8 caracteres" autocomplete="new-password"
+                   oninput="checkPass()">
+            <span class="field-icon">✓</span>
+            <div class="pass-strength">
+              <div class="pass-bar" id="pb1"></div>
+              <div class="pass-bar" id="pb2"></div>
+              <div class="pass-bar" id="pb3"></div>
+              <div class="pass-bar" id="pb4"></div>
+            </div>
+            <div class="pass-label" id="pass-label"></div>
+            <div class="field-msg" id="msg-pass1">Mínimo 8 caracteres.</div>
+          </div>
+          <div class="field" id="f-pass2">
+            <label>Confirmar contraseña <span style="color:var(--danger)">*</span></label>
+            <input type="password" id="pass2" name="password2" placeholder="Repite la contraseña" autocomplete="new-password"
+                   oninput="checkPass2()">
+            <span class="field-icon">✓</span>
+            <div class="field-msg" id="msg-pass2">Las contraseñas no coinciden.</div>
+          </div>
+        </div>
+
+        <div class="nav-btns">
+          <button type="button" class="btn btn-ghost" onclick="goToStep1()">
+            <span style="font-size:1rem;">←</span> Atrás
+          </button>
+          <button type="submit" class="btn btn-success" id="btn-submit">
+            <span>✓</span> Crear cuenta
+          </button>
+        </div>
+      </div>
+
+    </form>
+
+    <p class="login-link">¿Ya tienes cuenta? <a href="{% url 'login' %}">Inicia sesión</a></p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+<script>
+// ── Flatpickr ──
+const hoy = new Date();
+const fechaMax = new Date(hoy.getFullYear() - 18, hoy.getMonth(), hoy.getDate());
+
+flatpickr('#fecha_nacimiento', {
+  locale: 'es',
+  dateFormat: 'd/m/Y',
+  maxDate: fechaMax,
+  disableMobile: true,
+  onChange() { validateField('fecha_nacimiento'); }
+});
+
+// ── Helpers de validación ──
+function setField(id, state, msg) {
+  const wrap = document.getElementById('f-' + id);
+  const msgEl = document.getElementById('msg-' + id);
+  const icon  = wrap?.querySelector('.field-icon');
+  if (!wrap) return;
+  wrap.classList.remove('valid', 'invalid');
+  if (state === 'valid')   { wrap.classList.add('valid');   if (icon) icon.textContent = '✓'; }
+  if (state === 'invalid') { wrap.classList.add('invalid'); if (icon) icon.textContent = '✕'; }
+  if (msgEl && msg) msgEl.textContent = msg;
+}
+
+function validateField(id) {
+  const el = document.getElementById(id);
+  const v  = el ? el.value.trim() : '';
+
+  if (id === 'first_name' || id === 'contacto_emergencia') {
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(v)) return setField(id, 'invalid', 'Solo se permiten letras.');
+    return setField(id, 'valid');
+  }
+  if (id === 'last_name') {
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(v)) return setField(id, 'invalid', 'Solo se permiten letras.');
+    return setField(id, 'valid');
+  }
+  if (id === 'fecha_nacimiento') {
+    if (!v) return setField(id, 'invalid', 'Selecciona tu fecha de nacimiento.');
+    const parts = v.split('/');
+    const dob   = new Date(parts[2], parts[1]-1, parts[0]);
+    let age = hoy.getFullYear() - dob.getFullYear();
+    const m = hoy.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && hoy.getDate() < dob.getDate())) age--;
+    if (age < 18) return setField(id, 'invalid', 'Debes tener al menos 18 años.');
+    return setField(id, 'valid');
+  }
+  if (id === 'genero') {
+    if (!v) return setField(id, 'invalid', 'Selecciona una opción.');
+    return setField(id, 'valid');
+  }
+  if (id === 'cedula') {
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    if (!/^\d{6,10}(-[0-9A-Za-z]{1,3})?$/.test(v)) return setField(id, 'invalid', 'Formato inválido. Ej: 1234567 o 1234567-2A');
+    return setField(id, 'valid');
+  }
+  if (id === 'username') {
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    if (!/^[a-zA-Z0-9_]+$/.test(v)) return setField(id, 'invalid', 'Solo letras, números y guion bajo.');
+    return setField(id, 'valid');
+  }
+  if (id === 'email') {
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return setField(id, 'invalid', 'Correo inválido.');
+    return setField(id, 'valid');
+  }
+  if (id === 'telefono') {
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    return setField(id, 'valid');
+  }
+  if (id === 'direccion') {
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    return setField(id, 'valid');
+  }
+  if (id === 'numero_emergencia') {
+    const tel = document.getElementById('telefono')?.value.trim();
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    if (v === tel) return setField(id, 'invalid', 'No puede coincidir con tu teléfono.');
+    return setField(id, 'valid');
+  }
+  if (id === 'pass1') {
+    if (v.length < 8) return setField(id, 'invalid', 'Mínimo 8 caracteres.');
+    return setField(id, 'valid');
+  }
+  if (id === 'pass2') {
+    const p1 = document.getElementById('pass1')?.value;
+    if (!v) return setField(id, 'invalid', 'Campo obligatorio.');
+    if (v !== p1) return setField(id, 'invalid', 'Las contraseñas no coinciden.');
+    return setField(id, 'valid');
+  }
+}
+
+// ── Validación en tiempo real ──
+['first_name','last_name','genero','cedula','fecha_nacimiento',
+ 'username','email','telefono','direccion','contacto_emergencia','numero_emergencia'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('blur',  () => validateField(id));
+    el.addEventListener('input', () => {
+      const wrap = document.getElementById('f-' + id);
+      if (wrap?.classList.contains('invalid')) validateField(id);
+    });
+  }
+});
+
+// ── Fortaleza contraseña ──
+function checkPass() {
+  const v    = document.getElementById('pass1').value;
+  const bars = [document.getElementById('pb1'), document.getElementById('pb2'),
+                document.getElementById('pb3'), document.getElementById('pb4')];
+  const lbl  = document.getElementById('pass-label');
+
+  bars.forEach(b => b.style.background = '#e2e8f0');
+
+  let score = 0;
+  if (v.length >= 8)  score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+
+  const colors = ['#dc2626','#f59e0b','#3b82f6','#16a34a'];
+  const labels = ['Muy débil','Regular','Buena','Fuerte'];
+  for (let i = 0; i < score; i++) bars[i].style.background = colors[score-1];
+  lbl.textContent = v.length > 0 ? labels[score-1] || '' : '';
+  lbl.style.color = colors[score-1] || '#64748b';
+
+  validateField('pass1');
+}
+
+function checkPass2() { validateField('pass2'); }
+
+// ── Navegación entre pasos ──
+function fieldOk(id) {
+  return document.getElementById('f-' + id)?.classList.contains('valid');
+}
+
+function goToStep2() {
+  const step1 = ['first_name','last_name','fecha_nacimiento','genero','cedula'];
+  step1.forEach(id => validateField(id));
+  if (!step1.every(fieldOk)) return;
+
+  document.getElementById('panel-1').classList.remove('active');
+  document.getElementById('panel-2').classList.add('active');
+  document.getElementById('panel-2').classList.remove('back-anim');
+
+  document.getElementById('node-1').classList.remove('active');
+  document.getElementById('node-1').classList.add('done');
+  document.getElementById('circle-1').textContent = '✓';
+  document.getElementById('node-2').classList.add('active');
+  document.getElementById('connector-1').classList.add('done');
+}
+
+function goToStep1() {
+  document.getElementById('panel-2').classList.remove('active');
+  document.getElementById('panel-1').classList.add('active');
+
+  document.getElementById('node-2').classList.remove('active');
+  document.getElementById('node-1').classList.remove('done');
+  document.getElementById('node-1').classList.add('active');
+  document.getElementById('circle-1').textContent = '1';
+  document.getElementById('connector-1').classList.remove('done');
+
+  document.getElementById('panel-1').classList.remove('back-anim');
+  void document.getElementById('panel-1').offsetWidth;
+  document.getElementById('panel-1').classList.add('back-anim');
+  setTimeout(() => document.getElementById('panel-1').classList.remove('back-anim'), 250);
+}
+
+// ── Submit final ──
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+  const step2 = ['username','email','telefono','direccion',
+                  'contacto_emergencia','numero_emergencia','pass1','pass2'];
+  step2.forEach(id => validateField(id));
+  if (!step2.every(fieldOk)) { e.preventDefault(); return; }
+  // Si pasa todo, Django procesa el POST
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,825 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Mi Perfil | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+    .perfil-layout {
+        display: grid;
+        grid-template-columns: 260px 1fr;
+        gap: 1.5rem;
+        align-items: start;
+    }
+
+    @media (max-width: 768px) {
+        .perfil-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Sidebar */
+    .perfil-sidebar {
+        background: var(--mc-surface);
+        border: 1px solid var(--mc-border);
+        border-radius: 18px;
+        overflow: hidden;
+        position: sticky;
+        top: 80px;
+    }
+
+    .perfil-user-header {
+        background: linear-gradient(135deg, var(--mc-primary), var(--mc-accent));
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .perfil-avatar-wrap {
+        position: relative;
+        display: inline-block;
+        margin-bottom: .75rem;
+    }
+
+    .perfil-avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255, 255, 255, .8);
+    }
+
+    .perfil-avatar-btn {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 28px;
+        height: 28px;
+        background: white;
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--mc-primary);
+        font-size: .7rem;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, .2);
+        transition: var(--mc-transition);
+    }
+
+    .perfil-avatar-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .perfil-user-name {
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        margin: 0 0 2px;
+    }
+
+    .perfil-user-role {
+        background: rgba(255, 255, 255, .2);
+        color: white;
+        font-size: .72rem;
+        padding: 2px 10px;
+        border-radius: 50px;
+        display: inline-block;
+    }
+
+    /* Nav */
+    .perfil-nav {
+        padding: .75rem;
+    }
+
+    .perfil-nav-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        cursor: pointer;
+        color: var(--mc-text-muted);
+        font-size: .875rem;
+        font-weight: 500;
+        border: none;
+        background: transparent;
+        width: 100%;
+        text-align: left;
+        transition: var(--mc-transition);
+        margin-bottom: 2px;
+    }
+
+    .perfil-nav-item i {
+        width: 18px;
+        text-align: center;
+        font-size: .9rem;
+    }
+
+    .perfil-nav-item:hover {
+        background: var(--mc-primary-light);
+        color: var(--mc-primary);
+    }
+
+    .perfil-nav-item.active {
+        background: var(--mc-primary-soft);
+        color: var(--mc-primary);
+        font-weight: 600;
+    }
+
+    .perfil-nav-divider {
+        height: 1px;
+        background: var(--mc-border);
+        margin: 8px 14px;
+    }
+
+    /* Contenido */
+    .perfil-content {
+        background: var(--mc-surface);
+        border: 1px solid var(--mc-border);
+        border-radius: 18px;
+        padding: 2rem;
+    }
+
+    .perfil-section-title {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: var(--mc-text);
+        margin-bottom: .25rem;
+    }
+
+    .perfil-section-sub {
+        color: var(--mc-text-muted);
+        font-size: .85rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* ── Campos con hints ── */
+    .pf-field {
+        margin-bottom: 1rem;
+    }
+
+    .pf-field label {
+        font-size: .72rem;
+        font-weight: 600;
+        color: var(--mc-text-muted);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .pf-field .form-control,
+    .pf-field .form-select {
+        border: 1.5px solid var(--mc-border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: .875rem;
+        color: var(--mc-text);
+        background: var(--mc-surface);
+        transition: border-color .18s ease, box-shadow .18s ease;
+    }
+
+    .pf-field .form-control:focus,
+    .pf-field .form-select:focus {
+        border-color: var(--mc-primary);
+        box-shadow: 0 0 0 3px var(--mc-primary-soft);
+        outline: none;
+    }
+
+    /* Hint de validación debajo del campo */
+    .pf-hint {
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+        margin-top: 5px;
+        font-size: .72rem;
+        color: var(--mc-text-muted);
+        line-height: 1.4;
+    }
+
+    .pf-hint i {
+        margin-top: 1px;
+        flex-shrink: 0;
+        font-size: .68rem;
+    }
+
+    /* Campos de solo lectura (email actual) */
+    .info-value {
+        background: var(--mc-surface-2);
+        border: 1px solid var(--mc-border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        color: var(--mc-text);
+        font-size: .9rem;
+        font-weight: 500;
+    }
+
+    /* Botón guardar */
+    .btn-guardar {
+        background: linear-gradient(135deg, var(--mc-primary), var(--mc-accent));
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 10px 28px;
+        font-weight: 600;
+        font-size: .875rem;
+        transition: var(--mc-transition);
+        cursor: pointer;
+    }
+
+    .btn-guardar:hover {
+        opacity: .9;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, .3);
+        color: white;
+    }
+
+    /* Ayuda */
+    .help-card {
+        background: var(--mc-primary-light);
+        border: 1px solid var(--mc-primary-soft);
+        border-radius: 14px;
+        padding: 1rem;
+        margin: .75rem;
+    }
+
+    .perfil-tab {
+        display: none;
+    }
+
+    .perfil-tab.active {
+        display: block;
+        animation: mcSlideIn .25s ease both;
+    }
+
+    /* Tabla gestión */
+    #tablaUsuarios {
+        --bs-table-bg: transparent;
+        --bs-table-color: var(--mc-text);
+        --bs-table-border-color: var(--mc-border);
+        --bs-table-hover-bg: var(--mc-surface-2);
+        color: var(--mc-text);
+    }
+
+    #tablaUsuarios td,
+    #tablaUsuarios th {
+        background-color: transparent !important;
+        color: var(--mc-text) !important;
+        border-color: var(--mc-border) !important;
+        vertical-align: middle;
+    }
+
+    #tablaUsuarios tbody tr:hover td {
+        background-color: var(--mc-surface-2) !important;
+    }
+
+    /* Sección dentro de seguridad */
+    .seg-block {
+        background: var(--mc-surface-2);
+        border: 1px solid var(--mc-border);
+        border-radius: 14px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .seg-block h6 {
+        font-weight: 700;
+        font-size: .9rem;
+        color: var(--mc-text);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:950px;margin:0 auto;">
+
+    <h4 class="fw-bold mb-1" style="color:var(--mc-text);">Mi Perfil</h4>
+    <p class="mb-4" style="color:var(--mc-text-muted);">Información de tu cuenta y preferencias.</p>
+
+    <div class="perfil-layout">
+
+        <!-- SIDEBAR -->
+        <div class="perfil-sidebar">
+            <div class="perfil-user-header">
+                <div class="perfil-avatar-wrap">
+                    {% if profile.photo %}
+                    <img src="{{ profile.photo.url }}" class="perfil-avatar" alt="">
+                    {% else %}
+                    <img src="{{ default_avatar_url }}" class="perfil-avatar" alt="">
+                    {% endif %}
+                    <form method="POST" enctype="multipart/form-data" id="photoForm">
+                        {% csrf_token %}
+                        <label class="perfil-avatar-btn" title="Cambiar foto">
+                            <i class="fas fa-camera"></i>
+                            <input type="file" name="photo" class="d-none"
+                                onchange="document.getElementById('photoForm').submit()">
+                        </label>
+                    </form>
+                </div>
+                <p class="perfil-user-name">{{ user.get_full_name|default:user.username }}</p>
+                <span class="perfil-user-role">
+                    {% if user.is_superuser %}Administrador
+                    {% elif user.is_staff %}Doctor
+                    {% else %}Paciente{% endif %}
+                </span>
+            </div>
+
+            <nav class="perfil-nav">
+                <button class="perfil-nav-item active" onclick="showTab('info', this)">
+                    <i class="fas fa-user"></i> Información personal
+                </button>
+                <button class="perfil-nav-item" onclick="showTab('seguridad', this)">
+                    <i class="fas fa-shield-alt"></i> Seguridad
+                </button>
+                <button class="perfil-nav-item" onclick="showTab('preferencias', this)">
+                    <i class="fas fa-sliders-h"></i> Preferencias
+                </button>
+                {% if user.is_staff and not user.is_superuser %}
+                <div class="perfil-nav-divider"></div>
+                <button class="perfil-nav-item" onclick="showTab('profesional', this)">
+                    <i class="fas fa-user-md"></i> Datos profesionales
+                </button>
+                {% endif %}
+                {% if user.is_superuser %}
+                <div class="perfil-nav-divider"></div>
+                <button class="perfil-nav-item" onclick="showTab('gestion', this)">
+                    <i class="fas fa-user-md"></i> Gestión de médicos
+                </button>
+                {% endif %}
+            </nav>
+
+            <div class="help-card">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <i class="fas fa-headset" style="color:var(--mc-primary);"></i>
+                    <strong style="font-size:.8rem;color:var(--mc-text);">¿Necesitas ayuda?</strong>
+                </div>
+                <p style="font-size:.75rem;color:var(--mc-text-muted);margin:0 0 8px;">Estamos aquí para ayudarte.</p>
+                <a href="https://wa.me/59176350619" target="_blank"
+                    class="btn btn-outline-primary btn-sm w-100 rounded-pill" style="font-size:.75rem;">
+                    Contactar soporte
+                </a>
+            </div>
+        </div>
+
+        <!-- CONTENIDO -->
+        <div class="perfil-content">
+
+            <!-- ═══ PESTAÑA: INFORMACIÓN PERSONAL ═══ -->
+            <div class="perfil-tab active" id="tab-info">
+                <p class="perfil-section-title">Información personal</p>
+                <p class="perfil-section-sub">Actualiza tus datos personales. Los campos con * son obligatorios.</p>
+
+                <form method="POST" id="formInfo">
+                    {% csrf_token %}
+                    <input type="hidden" name="tab" value="info">
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Nombres *</label>
+                                <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}"
+                                    placeholder="Ej: María">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Solo letras y espacios. Sin números ni símbolos.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Apellidos *</label>
+                                <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}"
+                                    placeholder="Ej: García López">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Solo letras y espacios. Sin números ni símbolos.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Teléfono</label>
+                                <input type="text" name="phone" class="form-control" value="{{ profile.phone }}"
+                                    placeholder="Ej: 70012345">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Celular o fijo. Solo números, 7–10 dígitos.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Fecha de nacimiento</label>
+                                <input type="date" name="fecha_nacimiento" class="form-control"
+                                    value="{{ profile.fecha_nacimiento|date:'Y-m-d' }}"
+                                    min="{{ fecha_min_nacimiento|date:'Y-m-d' }}"
+                                    max="{{ fecha_max_nacimiento|date:'Y-m-d' }}">
+                                <div class="pf-hint">
+                                    <i class="fas fa-exclamation-triangle" style="color:var(--mc-warning);"></i>
+                                    Debes tener entre 18 y 100 años para usar la plataforma.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Género</label>
+                                <select name="genero" class="form-select">
+                                    <option value="">-- Selecciona --</option>
+                                    <option value="Masculino" {% if profile.genero == "Masculino" %}selected{% endif %}>
+                                        Masculino</option>
+                                    <option value="Femenino" {% if profile.genero == "Femenino" %}selected{% endif %}>
+                                        Femenino</option>
+                                    <option value="Otro" {% if profile.genero == "Otro" %}selected{% endif %}>Prefiero no
+                                        decir</option>
+                                </select>
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Opcional. Usado solo para estadísticas médicas.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Cédula de identidad</label>
+                                <input type="text" name="cedula" class="form-control" value="{{ profile.cedula }}"
+                                    placeholder="Ej: 1234567 o 1234567-2A" maxlength="12">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Solo números. Puedes añadir guion y complemento al final.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <div class="pf-field">
+                                <label>Dirección</label>
+                                <input type="text" name="direccion" class="form-control" value="{{ profile.direccion }}"
+                                    placeholder="Calle, Número, Zona">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Domicilio completo: calle, número y zona o barrio.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Ciudad</label>
+                                <input type="text" name="ciudad" class="form-control" value="{{ profile.ciudad }}"
+                                    placeholder="Ej: La Paz">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Ciudad donde resides actualmente.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>País</label>
+                                <input type="text" name="pais" class="form-control" value="{{ profile.pais }}"
+                                    placeholder="Ej: Bolivia">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    País de residencia.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Contacto de emergencia</label>
+                                <input type="text" name="contacto_emergencia" class="form-control"
+                                    value="{{ profile.contacto_emergencia }}"
+                                    placeholder="Nombre completo del contacto">
+                                <div class="pf-hint">
+                                    <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                    Nombre completo. Solo letras, sin números.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="pf-field">
+                                <label>Número de emergencia</label>
+                                <input type="text" name="numero_emergencia" class="form-control"
+                                    value="{{ profile.numero_emergencia }}" placeholder="Ej: 70098765">
+                                <div class="pf-hint">
+                                    <i class="fas fa-exclamation-triangle" style="color:var(--mc-warning);"></i>
+                                    No puede ser igual a tu teléfono personal.
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn-guardar">
+                            <i class="fas fa-save me-2"></i>Guardar cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- ═══ PESTAÑA: SEGURIDAD ═══ -->
+            <div class="perfil-tab" id="tab-seguridad">
+                <p class="perfil-section-title">Seguridad</p>
+                <p class="perfil-section-sub">Gestiona tu correo electrónico y contraseña de acceso.</p>
+
+                <!-- Cambiar email -->
+                <div class="seg-block">
+                    <h6><i class="fas fa-envelope me-2" style="color:var(--mc-primary);"></i>Correo electrónico</h6>
+                    <div class="pf-field mb-3">
+                        <label>Correo actual</label>
+                        <div class="info-value">{{ user.email }}</div>
+                    </div>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="tab" value="email">
+                        <div class="pf-field">
+                            <label>Nuevo correo electrónico *</label>
+                            <input type="email" name="new_email" class="form-control" placeholder="nuevo@correo.com"
+                                autocomplete="email">
+                            <div class="pf-hint">
+                                <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                Debe ser un correo válido y único (no usado por otra cuenta).
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-guardar mt-2">
+                            <i class="fas fa-save me-2"></i>Actualizar correo
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Cambiar contraseña -->
+                <div class="seg-block">
+                    <h6><i class="fas fa-lock me-2" style="color:var(--mc-primary);"></i>Contraseña</h6>
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="tab" value="password">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="pf-field">
+                                    <label>Contraseña actual *</label>
+                                    <input type="password" name="current_password" class="form-control"
+                                        placeholder="••••••••" autocomplete="current-password">
+                                    <div class="pf-hint">
+                                        <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                        Ingresa tu contraseña actual para confirmar el cambio.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="pf-field">
+                                    <label>Nueva contraseña *</label>
+                                    <input type="password" name="new_password1" class="form-control"
+                                        placeholder="••••••••" autocomplete="new-password">
+                                    <div class="pf-hint">
+                                        <i class="fas fa-exclamation-triangle" style="color:var(--mc-warning);"></i>
+                                        Mínimo 8 caracteres. Usa letras, números y símbolos para mayor seguridad.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="pf-field">
+                                    <label>Confirmar contraseña *</label>
+                                    <input type="password" name="new_password2" class="form-control"
+                                        placeholder="••••••••" autocomplete="new-password">
+                                    <div class="pf-hint">
+                                        <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                        Debe coincidir exactamente con la nueva contraseña.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-guardar mt-3">
+                            <i class="fas fa-key me-2"></i>Cambiar contraseña
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- ═══ PESTAÑA: DATOS PROFESIONALES ═══ -->
+            {% if user.is_staff and not user.is_superuser %}
+            <div class="perfil-tab" id="tab-profesional">
+                <p class="perfil-section-title">Datos profesionales</p>
+                <p class="perfil-section-sub">Información visible para tus pacientes.</p>
+
+                <div class="seg-block">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="tab" value="profesional">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="pf-field">
+                                    <label>Nombre completo</label>
+                                    <div class="info-value">{{ user.get_full_name|default:user.username }}</div>
+                                    <div class="pf-hint">
+                                        <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                        Se actualiza automáticamente desde "Información personal".
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="pf-field">
+                                    <label>Especialidad médica *</label>
+                                    <select name="especialidad_id" class="form-select" required>
+                                        <option value="">-- Selecciona --</option>
+                                        {% for esp in especialidades %}
+                                        <option value="{{ esp.id }}" {% if medico_perfil.especialidad_id == esp.id %}selected{% endif %}>
+                                            {{ esp.nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="pf-hint">
+                                        <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                        Selecciona la especialidad principal con la que atiendes pacientes.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="pf-field">
+                                    <label>Número de licencia médica *</label>
+                                    <input type="text" name="licencia" class="form-control" placeholder="Ej: LM-12345"
+                                        value="{{ medico_perfil.licencia }}" required>
+                                    <div class="pf-hint">
+                                        <i class="fas fa-exclamation-triangle" style="color:var(--mc-warning);"></i>
+                                        Número oficial emitido por el Colegio Médico. Obligatorio.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="pf-field">
+                                    <label>Descripción profesional</label>
+                                    <textarea name="descripcion" class="form-control" rows="4"
+                                        placeholder="Cuéntale a tus pacientes sobre tu experiencia…">{{ medico_perfil.descripcion }}</textarea>
+                                    <div class="pf-hint">
+                                        <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                                        Máximo recomendado: 300 caracteres. Sé claro y profesional.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn-guardar mt-3">
+                            <i class="fas fa-save me-2"></i>Guardar datos profesionales
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ═══ PESTAÑA: PREFERENCIAS ═══ -->
+            <div class="perfil-tab" id="tab-preferencias">
+                <p class="perfil-section-title">Preferencias</p>
+                <p class="perfil-section-sub">Personaliza tu experiencia en Medicita.</p>
+                <div class="seg-block">
+                    <h6><i class="fas fa-paint-brush me-2" style="color:var(--mc-primary);"></i>Apariencia</h6>
+                    <div class="d-flex align-items-center justify-content-between p-3"
+                        style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:12px;">
+                        <div>
+                            <strong style="color:var(--mc-text);font-size:.9rem;">Modo oscuro</strong>
+                            <p class="mb-0" style="color:var(--mc-text-muted);font-size:.8rem;">Cambia entre modo claro
+                                y oscuro</p>
+                        </div>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" id="darkModeSwitch"
+                                style="width:48px;height:26px;cursor:pointer;" onchange="toggleTheme()">
+                        </div>
+                    </div>
+                    <div class="pf-hint mt-2">
+                        <i class="fas fa-info-circle" style="color:var(--mc-primary);"></i>
+                        Tu preferencia se guarda automáticamente en este dispositivo.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PESTAÑA: GESTIÓN MÉDICOS (admin) ═══ -->
+            {% if user.is_superuser %}
+            <div class="perfil-tab" id="tab-gestion">
+                <p class="perfil-section-title">Gestión de médicos</p>
+                <p class="perfil-section-sub">Administra los usuarios y asigna roles de doctor.</p>
+
+                <div class="mb-3">
+                    <div class="position-relative">
+                        <i class="fas fa-search position-absolute"
+                            style="left:14px;top:50%;transform:translateY(-50%);color:var(--mc-text-muted);"></i>
+                        <input type="text" id="buscarUsuario" class="form-control ps-5"
+                            placeholder="Buscar por nombre o correo…">
+                    </div>
+                </div>
+
+                <div style="overflow-x:auto;">
+                    <table class="table" id="tablaUsuarios">
+                        <thead>
+                            <tr>
+                                <th>Usuario</th>
+                                <th>Correo</th>
+                                <th>Rol</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in todos_usuarios %}
+                            <tr class="fila-usuario" data-nombre="{{ u.get_full_name|lower }} {{ u.username|lower }}"
+                                data-email="{{ u.email|lower }}">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if u.profile.photo %}
+                                        <img src="{{ u.profile.photo.url }}" width="34" height="34"
+                                            class="rounded-circle" style="object-fit:cover;">
+                                        {% else %}
+                                        <div
+                                            style="width:34px;height:34px;border-radius:50%;background:var(--mc-primary-soft);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--mc-primary);font-size:.8rem;">
+                                            {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <div style="font-weight:600;font-size:.875rem;">{{u.get_full_name|default:u.username }}</div>
+                                            <div style="font-size:.75rem;color:var(--mc-text-muted);">@{{ u.username }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ u.email }}</td>
+                                <td>
+                                    {% if u.is_superuser %}
+                                    <span class="badge"
+                                        style="background:var(--mc-accent-soft);color:var(--mc-accent);border-radius:50px;padding:4px 10px;font-size:.75rem;">Admin</span>
+                                    {% elif u.is_staff %}
+                                    <span class="badge"
+                                        style="background:var(--mc-primary-soft);color:var(--mc-primary);border-radius:50px;padding:4px 10px;font-size:.75rem;">Doctor</span>
+                                    {% else %}
+                                    <span class="badge"
+                                        style="background:var(--mc-success-soft);color:var(--mc-success);border-radius:50px;padding:4px 10px;font-size:.75rem;">Paciente</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not u.is_superuser %}
+                                    {% if u.is_staff %}
+                                    <a href="{% url 'citas:quitar_doctor' u.id %}"
+                                        class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                        style="font-size:.78rem;"
+                                        onclick="return confirm('¿Quitar rol de doctor a {{ u.get_full_name|default:u.username }}?')">
+                                        <i class="fas fa-user-minus me-1"></i>Quitar Doctor
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'citas:asignar_doctor' u.id %}"
+                                        class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                        style="font-size:.78rem;">
+                                        <i class="fas fa-user-md me-1"></i>Convertir a Doctor
+                                    </a>
+                                    {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-4" style="color:var(--mc-text-muted);">No hay
+                                    usuarios registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+        </div><!-- /perfil-content -->
+    </div><!-- /perfil-layout -->
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showTab(tabName, btn) {
+        document.querySelectorAll('.perfil-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.perfil-nav-item').forEach(b => b.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const sw = document.getElementById('darkModeSwitch');
+        if (sw) sw.checked = document.documentElement.getAttribute('data-theme') === 'dark';
+    });
+
+    const buscarInput = document.getElementById('buscarUsuario');
+    if (buscarInput) {
+        buscarInput.addEventListener('input', function () {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.fila-usuario').forEach(fila => {
+                const nombre = fila.dataset.nombre || '';
+                const email = fila.dataset.email || '';
+                fila.style.display = (nombre.includes(q) || email.includes(q)) ? '' : 'none';
+            });
+        });
+    }
+</script>
+{% endblock %}

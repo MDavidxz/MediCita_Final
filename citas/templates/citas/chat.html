@@ -1,0 +1,374 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Mensajes | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: calc(100vh - 140px);
+        background: var(--mc-surface);
+        border: 1px solid var(--mc-border);
+        border-radius: 18px;
+        overflow: hidden;
+        display: flex;
+        box-shadow: var(--mc-shadow);
+    }
+
+    .chat-sidebar {
+        width: 300px;
+        min-width: 260px;
+        border-right: 1px solid var(--mc-border);
+        background: var(--mc-surface-2);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chat-sidebar-header {
+        padding: 16px;
+        border-bottom: 1px solid var(--mc-border);
+        background: var(--mc-surface);
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: var(--mc-text);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    .chat-list-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--mc-border);
+        text-decoration: none;
+        color: var(--mc-text);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        transition: var(--mc-transition);
+    }
+
+    .chat-list-item:hover {
+        background: var(--mc-primary-light);
+        color: var(--mc-text);
+    }
+
+    .chat-list-item.active {
+        background: var(--mc-primary-soft);
+        border-left: 3px solid var(--mc-primary);
+        color: var(--mc-text);
+    }
+
+    .avatar-wrapper {
+        position: relative;
+        flex-shrink: 0;
+    }
+
+    .online-dot {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        background: var(--mc-text-light);
+        border: 2px solid var(--mc-surface-2);
+    }
+
+    .online-dot.online { background: var(--mc-success); }
+
+    .chat-main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--mc-bg);
+        overflow: hidden;
+    }
+
+    .chat-header {
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--mc-border);
+        background: var(--mc-surface);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .chat-messages {
+        flex: 1;
+        padding: 20px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .message {
+        max-width: 68%;
+        padding: 10px 14px;
+        border-radius: 16px;
+        font-size: 0.875rem;
+        word-wrap: break-word;
+        box-shadow: var(--mc-shadow-sm);
+        line-height: 1.5;
+    }
+
+    .message.sent {
+        background: var(--mc-primary);
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 4px;
+    }
+
+    .message.received {
+        background: var(--mc-surface);
+        color: var(--mc-text);
+        border: 1px solid var(--mc-border);
+        margin-right: auto;
+        border-bottom-left-radius: 4px;
+    }
+
+    .msg-time {
+        font-size: 10px;
+        opacity: 0.65;
+        margin-top: 4px;
+        text-align: right;
+    }
+
+    .chat-input-bar {
+        padding: 14px 18px;
+        background: var(--mc-surface);
+        border-top: 1px solid var(--mc-border);
+    }
+
+    .chat-input-bar input {
+        background: var(--mc-surface-2);
+        border: 1px solid var(--mc-border);
+        border-radius: 50px;
+        padding: 10px 18px;
+        color: var(--mc-text);
+        flex: 1;
+        outline: none;
+        transition: var(--mc-transition);
+    }
+
+    .chat-input-bar input:focus {
+        border-color: var(--mc-primary);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+
+    .chat-input-bar input::placeholder {
+        color: var(--mc-text-light);
+    }
+
+    .chat-empty {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-grow: 1;
+        flex-direction: column;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .chat-empty i {
+        font-size: 3rem;
+        color: var(--mc-border);
+        margin-bottom: 1rem;
+    }
+
+    .chat-empty h5 { color: var(--mc-text); }
+    .chat-empty p  { color: var(--mc-text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:1280px;margin:0 auto;">
+    <h4 class="fw-bold mb-3" style="color:var(--mc-text);">Mensajes</h4>
+
+    <div class="chat-container">
+
+        <!-- Sidebar -->
+        <div class="chat-sidebar">
+            <div class="chat-sidebar-header">
+                <i class="fas fa-{% if user_is_staff %}users{% else %}user-md{% endif %} me-2" style="color:var(--mc-primary);"></i>
+                {% if user_is_staff %}Mis pacientes{% else %}Mis médicos{% endif %}
+            </div>
+
+            {% for conv in conversations %}
+                {% if user_is_staff %}{% with other=conv.paciente %}
+                    <a href="?conversation={{ conv.id }}"
+                       class="chat-list-item {% if selected_conversation and selected_conversation.id == conv.id %}active{% endif %}">
+                        <div class="avatar-wrapper">
+                            {% if other.profile.photo %}
+                                <img src="{{ other.profile.photo.url }}" class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+                            {% else %}
+                                <img src="{{ default_avatar_url }}" class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-semibold" style="font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                {{ other.get_full_name|default:other.username }}
+                            </div>
+                            <div class="small text-truncate" style="color:var(--mc-text-muted);max-width:160px;">
+                                {% if conv.messages.last %}{{ conv.messages.last.content|truncatechars:30 }}{% else %}Sin mensajes{% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endwith %}{% else %}{% with other=conv.medico %}
+                    <a href="?conversation={{ conv.id }}"
+                       class="chat-list-item {% if selected_conversation and selected_conversation.id == conv.id %}active{% endif %}">
+                        <div class="avatar-wrapper">
+                            {% if other.profile.photo %}
+                                <img src="{{ other.profile.photo.url }}" class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+                            {% else %}
+                                <img src="{{ default_avatar_url }}" class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-semibold" style="font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                Dr. {{ other.get_full_name|default:other.username }}
+                            </div>
+                            <div class="small text-truncate" style="color:var(--mc-text-muted);max-width:160px;">
+                                {% if conv.messages.last %}{{ conv.messages.last.content|truncatechars:30 }}{% else %}Sin mensajes{% endif %}
+                            </div>
+                        </div>
+                    </a>
+                {% endwith %}{% endif %}
+            {% empty %}
+                <div class="p-4 text-center">
+                    <i class="fas fa-comment-slash fa-2x mb-2" style="color:var(--mc-border);"></i>
+                    <p class="small mb-0" style="color:var(--mc-text-muted);">
+                        {% if user_is_staff %}Aún no tienes chats con pacientes.
+                        {% else %}Agenda una cita para chatear con tu médico.{% endif %}
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Chat Principal -->
+        <div class="chat-main">
+            {% if selected_conversation %}
+                <!-- Header -->
+                <div class="chat-header">
+                    <div class="avatar-wrapper">
+                        {% if other_user.profile.photo %}
+                            <img src="{{ other_user.profile.photo.url }}" class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+                        {% else %}
+                            <img src="{{ default_avatar_url }}" class="rounded-circle" width="40" height="40" style="object-fit:cover;">
+                        {% endif %}
+                        <div class="online-dot" id="onlineDot"></div>
+                    </div>
+                    <div>
+                        <div class="fw-semibold" style="color:var(--mc-text);">
+                            {% if not user_is_staff %}Dr. {% endif %}{{ other_user.get_full_name|default:other_user.username }}
+                        </div>
+                        <div class="small" id="onlineStatus" style="color:var(--mc-text-muted);">Desconectado</div>
+                    </div>
+                </div>
+
+                <!-- Mensajes -->
+                <div class="chat-messages" id="chatMessages">
+                    {% for msg in messages %}
+                        <div class="message {% if msg.sender == request.user %}sent{% else %}received{% endif %}" data-msg-id="{{ msg.id }}">
+                            {{ msg.content }}
+                            <div class="msg-time">{{ msg.timestamp|date:"H:i" }}</div>
+                        </div>
+                    {% empty %}
+                        <div class="chat-empty">
+                            <i class="fas fa-comments"></i>
+                            <h5>No hay mensajes aún</h5>
+                            <p>Envía el primero para iniciar la conversación.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Input -->
+                <div class="chat-input-bar">
+                    <form method="POST" class="d-flex gap-2" id="chatForm">
+                        {% csrf_token %}
+                        <input type="text" name="content" id="chatInput"
+                               placeholder="Escribe un mensaje..." required autocomplete="off">
+                        <button type="submit" class="btn btn-primary rounded-pill px-4" style="flex-shrink:0;">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+
+            {% else %}
+                <div class="chat-empty">
+                    <i class="fas fa-comments"></i>
+                    <h5>Selecciona un chat</h5>
+                    <p>Elige una conversación para empezar a chatear.</p>
+                </div>
+            {% endif %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const chatMessagesEl = document.getElementById('chatMessages');
+
+    function scrollToBottom() {
+        if (chatMessagesEl) chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+    }
+
+    document.addEventListener('DOMContentLoaded', scrollToBottom);
+
+    {% if selected_conversation %}
+    let lastMessageId = 0;
+
+    document.querySelectorAll('#chatMessages .message').forEach(el => {
+        const id = parseInt(el.dataset.msgId);
+        if (!isNaN(id) && id > lastMessageId) lastMessageId = id;
+    });
+
+    function pollMessages() {
+        fetch(`{% url 'citas:chat_poll' selected_conversation.id %}?last_id=${lastMessageId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.messages && data.messages.length > 0) {
+                    // Quitar el mensaje vacío si existe
+                    const empty = chatMessagesEl.querySelector('.chat-empty');
+                    if (empty) empty.remove();
+
+                    data.messages.forEach(msg => {
+                        const div = document.createElement('div');
+                        div.className = `message ${msg.sender === 'me' ? 'sent' : 'received'}`;
+                        div.dataset.msgId = msg.id;
+                        div.innerHTML = `${escapeHtml(msg.content)}<div class="msg-time">${msg.time}</div>`;
+                        chatMessagesEl.appendChild(div);
+                        lastMessageId = Math.max(lastMessageId, msg.id);
+                    });
+                    scrollToBottom();
+                }
+
+                const dot    = document.getElementById('onlineDot');
+                const status = document.getElementById('onlineStatus');
+                if (data.other_online) {
+                    dot.classList.add('online');
+                    status.textContent = 'En línea';
+                    status.style.color = 'var(--mc-success)';
+                } else {
+                    dot.classList.remove('online');
+                    status.textContent = 'Desconectado';
+                    status.style.color = 'var(--mc-text-muted)';
+                }
+            })
+            .catch(err => console.error('Error polling:', err));
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    setInterval(pollMessages, 3000);
+    pollMessages();
+    {% endif %}
+</script>
+{% endblock %}

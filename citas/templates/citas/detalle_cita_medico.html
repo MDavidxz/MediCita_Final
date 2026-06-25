@@ -1,0 +1,398 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Detalle de Cita | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+.info-block {
+    background: var(--mc-surface-2);
+    border: 1px solid var(--mc-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+}
+.info-label {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--mc-text-muted);
+    margin-bottom: 2px;
+}
+.info-value {
+    font-weight: 600;
+    color: var(--mc-text);
+}
+
+/* estado visual */
+.estado-track {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 1.5rem 0;
+}
+.estado-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+.estado-step::before {
+    content: '';
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    width: 100%;
+    height: 3px;
+    background: var(--mc-border);
+    z-index: 0;
+}
+.estado-step:last-child::before { display: none; }
+.estado-circle {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 3px solid var(--mc-border);
+    background: var(--mc-surface);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .8rem;
+    position: relative; z-index: 1;
+    transition: var(--mc-transition);
+}
+.estado-step.done .estado-circle {
+    background: var(--mc-success); border-color: var(--mc-success); color: #fff;
+}
+.estado-step.done::before { background: var(--mc-success); }
+.estado-step.active .estado-circle {
+    background: var(--mc-primary); border-color: var(--mc-primary); color: #fff;
+    box-shadow: 0 0 0 4px var(--mc-primary-soft);
+}
+.estado-step-label {
+    font-size: .72rem;
+    margin-top: 6px;
+    color: var(--mc-text-muted);
+    font-weight: 600;
+    text-align: center;
+}
+.estado-step.active .estado-step-label,
+.estado-step.done  .estado-step-label { color: var(--mc-text); }
+
+/* botones de acción */
+.btn-accion {
+    border-radius: 12px;
+    padding: .65rem 1.4rem;
+    font-weight: 600;
+    font-size: .9rem;
+    transition: var(--mc-transition);
+}
+
+/* nota clínica */
+.nota-section {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+}
+.nota-textarea {
+    background: var(--mc-surface-2);
+    border: 1.5px solid var(--mc-border);
+    border-radius: 10px;
+    color: var(--mc-text);
+    resize: vertical;
+    min-height: 90px;
+    transition: var(--mc-transition);
+}
+.nota-textarea:focus {
+    border-color: var(--mc-primary);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--mc-primary-soft);
+    background: var(--mc-surface);
+}
+.nota-readonly {
+    background: var(--mc-surface-2);
+    border: 1px solid var(--mc-border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    color: var(--mc-text);
+    min-height: 60px;
+    white-space: pre-wrap;
+    font-size: .9rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:860px;">
+
+    <!-- Volver -->
+    <div class="mb-4">
+        <a href="{% url 'citas:agenda_medico' %}" class="text-decoration-none small fw-semibold" style="color:var(--mc-text-muted);">
+            <i class="fas fa-arrow-left me-1"></i> Volver a la agenda
+        </a>
+    </div>
+
+    <!-- ENCABEZADO DE LA CITA -->
+    <div class="p-4 mb-4" style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:18px;box-shadow:var(--mc-shadow-sm);">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+            <div>
+                <h4 class="fw-bold mb-1" style="color:var(--mc-text);">
+                    Cita #MED-{{ cita.id|stringformat:"05d" }}
+                </h4>
+                <p class="mb-0 small" style="color:var(--mc-text-muted);">
+                    {{ cita.fecha|date:"l d \d\e F \d\e Y" }} &nbsp;·&nbsp; {{ cita.hora }}
+                </p>
+            </div>
+            <!-- Código de color del estado -->
+            <div>
+                {% if cita.estado == 'confirmada' %}
+                    <span class="badge fs-6 px-3 py-2 rounded-pill" style="background:var(--mc-primary-soft);color:var(--mc-primary);">
+                        <i class="fas fa-calendar-check me-1"></i>Confirmada
+                    </span>
+                {% elif cita.estado == 'en_consulta' %}
+                    <span class="badge fs-6 px-3 py-2 rounded-pill" style="background:var(--mc-warning-soft);color:var(--mc-warning);">
+                        <i class="fas fa-stethoscope me-1"></i>En Consulta
+                    </span>
+                {% elif cita.estado == 'atendida' %}
+                    <span class="badge fs-6 px-3 py-2 rounded-pill" style="background:var(--mc-success-soft);color:var(--mc-success);">
+                        <i class="fas fa-check-circle me-1"></i>Atendida
+                    </span>
+                {% elif cita.estado == 'cancelada' %}
+                    <span class="badge fs-6 px-3 py-2 rounded-pill" style="background:var(--mc-danger-soft);color:var(--mc-danger);">
+                        <i class="fas fa-times-circle me-1"></i>Cancelada
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- TRACK DE ESTADOS -->
+        <div class="estado-track">
+            <div class="estado-step {% if cita.estado in 'confirmada,en_consulta,atendida' %}done{% endif %} {% if cita.estado == 'confirmada' %}active{% endif %}">
+                <div class="estado-circle">
+                    {% if cita.estado == 'confirmada' %}<i class="fas fa-calendar-check"></i>
+                    {% elif cita.estado in 'en_consulta,atendida' %}<i class="fas fa-check"></i>
+                    {% else %}<span>1</span>{% endif %}
+                </div>
+                <span class="estado-step-label">Confirmada</span>
+            </div>
+            <div class="estado-step {% if cita.estado in 'en_consulta,atendida' %}done{% endif %} {% if cita.estado == 'en_consulta' %}active{% endif %}">
+                <div class="estado-circle">
+                    {% if cita.estado == 'en_consulta' %}<i class="fas fa-stethoscope"></i>
+                    {% elif cita.estado == 'atendida' %}<i class="fas fa-check"></i>
+                    {% else %}<span>2</span>{% endif %}
+                </div>
+                <span class="estado-step-label">En Consulta</span>
+            </div>
+            <div class="estado-step {% if cita.estado == 'atendida' %}done active{% endif %}">
+                <div class="estado-circle">
+                    {% if cita.estado == 'atendida' %}<i class="fas fa-check-double"></i>
+                    {% else %}<span>3</span>{% endif %}
+                </div>
+                <span class="estado-step-label">Finalizada</span>
+            </div>
+        </div>
+
+        <!-- DATOS DEL PACIENTE -->
+        <h6 class="fw-bold mb-3 mt-2" style="color:var(--mc-text);">
+            <i class="fas fa-user me-2" style="color:var(--mc-primary);"></i>Datos del paciente
+        </h6>
+        <div class="row g-3 mb-4">
+            <div class="col-md-6">
+                <div class="info-block">
+                    <div class="info-label">Nombre completo</div>
+                    <div class="info-value">{{ cita.paciente.get_full_name|default:cita.paciente.username }}</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-block">
+                    <div class="info-label">Correo electrónico</div>
+                    <div class="info-value">{{ cita.paciente.email|default:"—" }}</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="info-block">
+                    <div class="info-label">Teléfono</div>
+                    <div class="info-value">
+                        {% if cita.paciente.profile.phone %}{{ cita.paciente.profile.phone }}{% else %}—{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="info-block">
+                    <div class="info-label">Cédula</div>
+                    <div class="info-value">
+                        {% if cita.paciente.profile.cedula %}{{ cita.paciente.profile.cedula }}{% else %}—{% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="info-block">
+                    <div class="info-label">Especialidad</div>
+                    <div class="info-value">{{ cita.especialidad.nombre }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTONES DE ACCIÓN -->
+        {% if cita.estado != 'cancelada' and cita.estado != 'atendida' %}
+        <div class="d-flex flex-wrap gap-2 pt-3 border-top" style="border-color:var(--mc-border) !important;">
+            {% if cita.estado == 'confirmada' %}
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="en_consulta">
+                    <button type="submit" class="btn btn-warning btn-accion">
+                        <i class="fas fa-stethoscope me-2"></i>Iniciar Consulta
+                    </button>
+                </form>
+            {% endif %}
+            {% if cita.estado == 'en_consulta' %}
+                <button type="button" class="btn btn-success btn-accion" onclick="mostrarFormNota()">
+                    <i class="fas fa-check-double me-2"></i>Finalizar y guardar nota
+                </button>
+            {% endif %}
+            <form method="POST" onsubmit="return confirm('¿Cancelar esta cita?')">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="cancelar">
+                <button type="submit" class="btn btn-outline-danger btn-accion">
+                    <i class="fas fa-times me-2"></i>Cancelar cita
+                </button>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- NOTA CLÍNICA -->
+    <div class="nota-section">
+        <h5 class="fw-bold mb-4" style="color:var(--mc-text);">
+            <i class="fas fa-file-medical me-2" style="color:var(--mc-primary);"></i>Nota Clínica
+        </h5>
+
+        {% if cita.estado == 'atendida' and nota %}
+            <!-- MODO LECTURA + opción editar -->
+            <div class="row g-3 mb-3">
+                <div class="col-12">
+                    <div class="info-label">Diagnóstico</div>
+                    <div class="nota-readonly">{{ nota.diagnostico|default:"—" }}</div>
+                </div>
+                <div class="col-12">
+                    <div class="info-label">Tratamiento / Solución</div>
+                    <div class="nota-readonly">{{ nota.tratamiento|default:"—" }}</div>
+                </div>
+                <div class="col-12">
+                    <div class="info-label">Receta</div>
+                    <div class="nota-readonly">{{ nota.receta|default:"—" }}</div>
+                </div>
+                {% if nota.requiere_seguimiento %}
+                <div class="col-md-6">
+                    <div class="info-block" style="border-color:var(--mc-warning);">
+                        <div class="info-label" style="color:var(--mc-warning);">Seguimiento requerido</div>
+                        <div class="info-value">{{ nota.fecha_seguimiento|date:"d/m/Y"|default:"Sin fecha" }}</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            <div class="mt-3 pt-3 border-top" style="border-color:var(--mc-border) !important;">
+                <small style="color:var(--mc-text-muted);">
+                    Última actualización: {{ nota.updated_at|date:"d/m/Y H:i" }}
+                </small>
+                <button type="button" class="btn btn-outline-secondary btn-sm ms-3 rounded-pill" onclick="mostrarFormNota()">
+                    <i class="fas fa-edit me-1"></i>Editar nota
+                </button>
+            </div>
+
+        {% elif cita.estado == 'en_consulta' and not nota %}
+            <!-- INDICACIÓN: en consulta sin nota aún -->
+            <p class="small mb-4" style="color:var(--mc-text-muted);">
+                Completa la nota clínica y finaliza la consulta.
+            </p>
+        {% else %}
+            <!-- Esperando que inicie la consulta -->
+            <p class="small" style="color:var(--mc-text-muted);">
+                La nota clínica estará disponible una vez que inicies la consulta.
+            </p>
+        {% endif %}
+
+        <!-- FORMULARIO DE NOTA (oculto, se muestra con JS) -->
+        {% if cita.estado == 'en_consulta' or cita.estado == 'atendida' %}
+        <div id="form-nota" style="display:{% if cita.estado == 'en_consulta' and not nota %}block{% else %}none{% endif %};">
+            <form method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="{% if cita.estado == 'atendida' %}guardar_nota{% else %}atender{% endif %}">
+
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" style="color:var(--mc-text);">
+                            Diagnóstico <span style="color:var(--mc-danger);">*</span>
+                        </label>
+                        <textarea name="diagnostico" class="form-control nota-textarea"
+                            placeholder="Describe el diagnóstico del paciente…"
+                            required>{{ nota.diagnostico|default:"" }}</textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" style="color:var(--mc-text);">
+                            Tratamiento / Solución
+                        </label>
+                        <textarea name="tratamiento" class="form-control nota-textarea"
+                            placeholder="Indica el tratamiento o solución recomendada…">{{ nota.tratamiento|default:"" }}</textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" style="color:var(--mc-text);">Receta</label>
+                        <textarea name="receta" class="form-control nota-textarea"
+                            placeholder="Medicamentos, dosis, indicaciones…">{{ nota.receta|default:"" }}</textarea>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="chk-seguimiento"
+                                   name="requiere_seguimiento"
+                                   {% if nota and nota.requiere_seguimiento %}checked{% endif %}
+                                   onchange="toggleFechaSeguimiento(this)">
+                            <label class="form-check-label fw-semibold" for="chk-seguimiento" style="color:var(--mc-text);">
+                                Requiere seguimiento
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4" id="campo-fecha-seguimiento"
+                         style="display:{% if nota and nota.requiere_seguimiento %}block{% else %}none{% endif %};">
+                        <label class="form-label fw-semibold" style="color:var(--mc-text);">Fecha de seguimiento</label>
+                        <input type="date" name="fecha_seguimiento" class="form-control"
+                               value="{{ nota.fecha_seguimiento|date:'Y-m-d'|default:'' }}"
+                               style="background:var(--mc-surface-2);border-color:var(--mc-border);color:var(--mc-text);">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-success px-4 rounded-pill fw-semibold">
+                        {% if cita.estado == 'atendida' %}
+                            <i class="fas fa-save me-2"></i>Guardar cambios
+                        {% else %}
+                            <i class="fas fa-check-double me-2"></i>Finalizar consulta
+                        {% endif %}
+                    </button>
+                    {% if nota %}
+                    <button type="button" class="btn btn-outline-secondary rounded-pill" onclick="ocultarFormNota()">
+                        Cancelar
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function mostrarFormNota() {
+    document.getElementById('form-nota').style.display = 'block';
+    document.getElementById('form-nota').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function ocultarFormNota() {
+    document.getElementById('form-nota').style.display = 'none';
+}
+function toggleFechaSeguimiento(chk) {
+    document.getElementById('campo-fecha-seguimiento').style.display = chk.checked ? 'block' : 'none';
+}
+</script>
+{% endblock %}

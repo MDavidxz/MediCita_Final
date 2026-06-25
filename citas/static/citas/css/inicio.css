@@ -1,0 +1,23 @@
+/* Estilos para la página de Inicio - Mismo estilo que Citas */
+.quick-access-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid #E2E8F0;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.quick-access-card:hover {
+    border-color: #4A7DFF;
+    box-shadow: 0 4px 12px rgba(74, 125, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.quick-access-card i {
+    font-size: 1.5rem;
+    margin-top: 4px;
+}

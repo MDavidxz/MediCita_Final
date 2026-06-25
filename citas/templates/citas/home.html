@@ -1,0 +1,279 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Inicio | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: var(--mc-surface);
+        border: 1px solid var(--mc-border);
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        transition: var(--mc-transition);
+        cursor: default;
+    }
+
+    .stat-card:hover {
+        box-shadow: var(--mc-shadow);
+        transform: translateY(-3px);
+    }
+
+    .stat-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+    }
+
+    .stat-icon.blue   { background: var(--mc-primary-soft);  color: var(--mc-primary); }
+    .stat-icon.yellow { background: var(--mc-warning-soft);   color: var(--mc-warning); }
+    .stat-icon.green  { background: var(--mc-success-soft);   color: var(--mc-success); }
+
+    .quick-card {
+        background: var(--mc-surface);
+        border: 1px solid var(--mc-border);
+        border-radius: 14px;
+        padding: 1.1rem;
+        text-decoration: none;
+        color: var(--mc-text);
+        transition: var(--mc-transition);
+        display: block;
+        text-align: center;
+    }
+
+    .quick-card:hover {
+        border-color: var(--mc-primary);
+        background: var(--mc-primary-light);
+        color: var(--mc-primary);
+        transform: translateY(-3px);
+        box-shadow: var(--mc-shadow);
+    }
+
+    .quick-card i {
+        font-size: 1.8rem;
+        color: var(--mc-primary);
+        margin-bottom: 0.5rem;
+        display: block;
+        transition: var(--mc-transition);
+    }
+
+    .quick-card:hover i {
+        transform: scale(1.15);
+    }
+
+    .section-card {
+        background: var(--mc-surface);
+        border: 1px solid var(--mc-border);
+        border-radius: 18px;
+        padding: 1.5rem;
+        height: 100%;
+    }
+
+    .section-title {
+        font-weight: 700;
+        color: var(--mc-text);
+        font-size: 1rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-title i {
+        color: var(--mc-primary);
+        font-size: 1rem;
+    }
+
+    .proxima-cita-detail {
+        background: var(--mc-primary-light);
+        border-radius: 14px;
+        padding: 1rem 1.25rem;
+    }
+
+    .detail-item small {
+        color: var(--mc-text-muted);
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .detail-item strong {
+        color: var(--mc-primary);
+        font-size: 0.95rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width:1280px;margin:0 auto;">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="color:var(--mc-text);">
+                ¡Bienvenido, {{ request.user.first_name|default:request.user.username }}! 👋
+            </h2>
+            <p style="color:var(--mc-text-muted);margin:0;">Aquí tienes un resumen rápido de tu actividad médica.</p>
+        </div>
+        <a href="{% url 'citas:agendar_cita' %}" class="btn btn-primary px-4 py-2 fw-semibold">
+            <i class="fas fa-plus me-2"></i> Agendar Cita
+        </a>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="row g-3 mb-4 mc-stagger">
+        <div class="col-md-4">
+            <div class="stat-card d-flex align-items-center gap-3">
+                <div class="stat-icon blue"><i class="fas fa-calendar-check"></i></div>
+                <div>
+                    <p class="mb-1" style="font-size:0.78rem;color:var(--mc-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Próxima cita</p>
+                    {% if proxima_cita %}
+                        <h5 class="fw-bold mb-0" style="color:var(--mc-text);">{{ proxima_cita.fecha|date:"d M" }} • {{ proxima_cita.hora }}</h5>
+                    {% else %}
+                        <h5 class="fw-bold mb-0" style="color:var(--mc-text-muted);">Sin próximas citas</h5>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card d-flex align-items-center gap-3">
+                <div class="stat-icon yellow"><i class="fas fa-envelope"></i></div>
+                <div>
+                    <p class="mb-1" style="font-size:0.78rem;color:var(--mc-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Mensajes nuevos</p>
+                    <h5 class="fw-bold mb-0" data-mensajes-nuevos style="color:var(--mc-text);">{{ mensajes_nuevos }} pendientes</h5>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="stat-card d-flex align-items-center gap-3">
+                <div class="stat-icon green"><i class="fas fa-file-medical"></i></div>
+                <div>
+                    <p class="mb-1" style="font-size:0.78rem;color:var(--mc-text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Historial médico</p>
+                    <h5 class="fw-bold mb-0" style="color:var(--mc-text);">{{ historial_count }} registros</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Segunda fila -->
+    <div class="row g-3">
+
+        <!-- Próxima cita programada -->
+        <div class="col-lg-7">
+            <div class="section-card">
+                <div class="section-title">
+                    <i class="fas fa-calendar-alt"></i> Próxima cita programada
+                </div>
+
+                {% if proxima_cita %}
+                    <div class="d-flex gap-3 align-items-center mb-3">
+                        {% if proxima_cita.medico.usuario and proxima_cita.medico.usuario.profile.photo %}
+                            <img src="{{ proxima_cita.medico.usuario.profile.photo.url }}" class="rounded-circle" width="72" height="72" style="object-fit:cover;border:3px solid var(--mc-primary-soft);" alt="">
+                        {% else %}
+                            <img src="{{ default_avatar_url }}" class="rounded-circle" width="72" height="72" style="object-fit:cover;border:3px solid var(--mc-primary-soft);" alt="">
+                        {% endif %}
+                        <div>
+                            <h6 class="fw-bold mb-1" style="color:var(--mc-text);">{{ proxima_cita.medico.nombre }}</h6>
+                            <p style="color:var(--mc-text-muted);font-size:0.875rem;margin:0;">
+                                {{ proxima_cita.especialidad.nombre }} • {{ proxima_cita.medico.hospital|default:"" }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="proxima-cita-detail">
+                        <div class="row g-2">
+                            <div class="col-4 detail-item">
+                                <small class="d-block">Fecha</small>
+                                <strong>{{ proxima_cita.fecha|date:"d M Y" }}</strong>
+                            </div>
+                            <div class="col-4 detail-item">
+                                <small class="d-block">Hora</small>
+                                <strong>{{ proxima_cita.hora }}</strong>
+                            </div>
+                            <div class="col-4 detail-item">
+                                <small class="d-block">Duración</small>
+                                <strong>30 min</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="badge-{{ proxima_cita.estado }}">
+                            <i class="fas fa-check-circle me-1"></i>{{ proxima_cita.estado|title }}
+                        </span>
+                        <a href="{% url 'citas:mis_citas' %}" class="btn btn-outline-primary btn-sm px-3">
+                            Ver detalles
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-calendar-times fa-3x mb-3" style="color:var(--mc-border);"></i>
+                        <p style="color:var(--mc-text-muted);">No tienes citas próximas programadas.</p>
+                        <a href="{% url 'citas:agendar_cita' %}" class="btn btn-primary px-4">
+                            <i class="fas fa-plus me-2"></i>Agendar cita
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Accesos rápidos -->
+        <div class="col-lg-5">
+            <div class="section-card">
+                <div class="section-title">
+                    <i class="fas fa-bolt"></i> Accesos rápidos
+                </div>
+                <div class="row g-2 mc-stagger">
+                    <div class="col-6">
+                        <a href="{% url 'citas:agendar_cita' %}" class="quick-card">
+                            <i class="fas fa-plus-circle"></i>
+                            <strong class="d-block" style="font-size:0.875rem;">Agendar cita</strong>
+                            <small style="color:var(--mc-text-muted);">Reserva tu consulta</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'citas:mis_citas' %}" class="quick-card">
+                            <i class="fas fa-list-alt"></i>
+                            <strong class="d-block" style="font-size:0.875rem;">Mis citas</strong>
+                            <small style="color:var(--mc-text-muted);">Ver todas mis citas</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'citas:chat' %}" class="quick-card">
+                            <i class="fas fa-comments"></i>
+                            <strong class="d-block" style="font-size:0.875rem;">Mensajes</strong>
+                            <small style="color:var(--mc-text-muted);">Chatea con tu médico</small>
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{% url 'citas:perfil' %}" class="quick-card">
+                            <i class="fas fa-user-circle"></i>
+                            <strong class="d-block" style="font-size:0.875rem;">Mi perfil</strong>
+                            <small style="color:var(--mc-text-muted);">Gestiona tu info</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    fetch("{% url 'citas:notificaciones_poll' %}")
+        .then(res => res.json())
+        .then(data => {
+            const el = document.querySelector('[data-mensajes-nuevos]');
+            if (el) el.textContent = data.count + " pendientes";
+        });
+</script>
+{% endblock %}

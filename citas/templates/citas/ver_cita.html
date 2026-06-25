@@ -1,0 +1,300 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Detalle de Cita | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+.info-label {
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--mc-text-muted);
+    margin-bottom: 3px;
+}
+.info-value {
+    font-weight: 600;
+    color: var(--mc-text);
+    font-size: .95rem;
+}
+.info-block {
+    background: var(--mc-surface-2);
+    border: 1px solid var(--mc-border);
+    border-radius: 12px;
+    padding: .9rem 1.1rem;
+}
+
+/* track de estados */
+.track-wrap {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    margin: 1.75rem 0;
+}
+.track-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    position: relative;
+}
+.track-step::after {
+    content: '';
+    position: absolute;
+    top: 17px;
+    left: 50%;
+    width: 100%;
+    height: 3px;
+    background: var(--mc-border);
+    z-index: 0;
+}
+.track-step:last-child::after { display: none; }
+.track-circle {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--mc-border);
+    background: var(--mc-surface);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .85rem;
+    position: relative; z-index: 1;
+    transition: var(--mc-transition);
+}
+.track-step.done .track-circle  { background: var(--mc-success); border-color: var(--mc-success); color: #fff; }
+.track-step.done::after          { background: var(--mc-success); }
+.track-step.active .track-circle { background: var(--mc-primary); border-color: var(--mc-primary); color: #fff; box-shadow: 0 0 0 4px var(--mc-primary-soft); }
+.track-label {
+    font-size: .71rem;
+    font-weight: 600;
+    color: var(--mc-text-muted);
+    margin-top: 6px;
+    text-align: center;
+}
+.track-step.done .track-label,
+.track-step.active .track-label { color: var(--mc-text); }
+
+/* nota clínica */
+.nota-block {
+    background: var(--mc-surface-2);
+    border: 1px solid var(--mc-border);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    white-space: pre-wrap;
+    font-size: .9rem;
+    color: var(--mc-text);
+    min-height: 56px;
+}
+.nota-block.vacio {
+    color: var(--mc-text-muted);
+    font-style: italic;
+}
+
+.section-card {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 18px;
+    padding: 1.75rem;
+    box-shadow: var(--mc-shadow-sm);
+    margin-bottom: 1.25rem;
+}
+.section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--mc-text);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 780px;">
+
+    <!-- Volver -->
+    <a href="{% url 'citas:mis_citas' %}" class="text-decoration-none small fw-semibold d-inline-flex align-items-center gap-1 mb-4"
+       style="color:var(--mc-text-muted);">
+        <i class="fas fa-arrow-left"></i> Volver a mis citas
+    </a>
+
+    <!-- ENCABEZADO -->
+    <div class="section-card">
+
+        <!-- barra de color superior según estado -->
+        {% if cita.estado == 'atendida' %}
+            <div style="height:4px;background:var(--mc-success);border-radius:6px;margin:-1.75rem -1.75rem 1.5rem;"></div>
+        {% elif cita.estado == 'en_consulta' %}
+            <div style="height:4px;background:var(--mc-warning);border-radius:6px;margin:-1.75rem -1.75rem 1.5rem;"></div>
+        {% elif cita.estado == 'cancelada' %}
+            <div style="height:4px;background:var(--mc-danger);border-radius:6px;margin:-1.75rem -1.75rem 1.5rem;"></div>
+        {% endif %}
+
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-1">
+            <div>
+                <h4 class="fw-bold mb-1" style="color:var(--mc-text);">
+                    Cita #MED-{{ cita.id|stringformat:"05d" }}
+                </h4>
+                <p class="mb-0 small" style="color:var(--mc-text-muted);">
+                    {{ cita.fecha|date:"l d \d\e F \d\e Y" }} &nbsp;·&nbsp; {{ cita.hora }}
+                </p>
+            </div>
+            {% if cita.estado == 'atendida' %}
+                <span class="badge fs-6 px-3 py-2 rounded-pill" style="background:var(--mc-success-soft);color:var(--mc-success);">
+                    <i class="fas fa-check-circle me-1"></i>Finalizada
+                </span>
+            {% elif cita.estado == 'en_consulta' %}
+                <span class="badge fs-6 px-3 py-2 rounded-pill" style="background:var(--mc-warning-soft);color:var(--mc-warning);">
+                    <i class="fas fa-stethoscope me-1"></i>En Consulta
+                </span>
+            {% elif cita.estado == 'cancelada' %}
+                <span class="badge fs-6 px-3 py-2 rounded-pill" style="background:var(--mc-danger-soft);color:var(--mc-danger);">
+                    <i class="fas fa-times-circle me-1"></i>Cancelada
+                </span>
+            {% endif %}
+        </div>
+
+        <!-- TRACK DE ESTADOS -->
+        <div class="track-wrap">
+            <!-- Confirmada -->
+            <div class="track-step done">
+                <div class="track-circle"><i class="fas fa-check"></i></div>
+                <span class="track-label">Confirmada</span>
+            </div>
+            <!-- En Consulta -->
+            <div class="track-step {% if cita.estado == 'en_consulta' %}active{% elif cita.estado == 'atendida' %}done{% endif %}">
+                <div class="track-circle">
+                    {% if cita.estado == 'atendida' %}<i class="fas fa-check"></i>
+                    {% elif cita.estado == 'en_consulta' %}<i class="fas fa-stethoscope"></i>
+                    {% else %}<span>2</span>{% endif %}
+                </div>
+                <span class="track-label">En Consulta</span>
+            </div>
+            <!-- Finalizada -->
+            <div class="track-step {% if cita.estado == 'atendida' %}done active{% endif %}">
+                <div class="track-circle">
+                    {% if cita.estado == 'atendida' %}<i class="fas fa-check-double"></i>
+                    {% else %}<span>3</span>{% endif %}
+                </div>
+                <span class="track-label">Finalizada</span>
+            </div>
+        </div>
+
+        <!-- DATOS DE LA CITA -->
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="info-block">
+                    <div class="info-label">Especialidad</div>
+                    <div class="info-value">{{ cita.especialidad.nombre }}</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-block">
+                    <div class="info-label">Médico</div>
+                    <div class="info-value">Dr. {{ cita.medico.nombre }}</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="info-block">
+                    <div class="info-label">Fecha</div>
+                    <div class="info-value">{{ cita.fecha|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="info-block">
+                    <div class="info-label">Hora</div>
+                    <div class="info-value" style="color:var(--mc-primary);">{{ cita.hora }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NOTA CLÍNICA (solo si está atendida y tiene nota) -->
+    {% if cita.estado == 'atendida' %}
+    <div class="section-card">
+        <div class="section-title">
+            <i class="fas fa-file-medical" style="color:var(--mc-primary);"></i>
+            Resultado de la consulta
+        </div>
+
+        {% if nota %}
+            <div class="mb-4">
+                <div class="info-label mb-2">Diagnóstico</div>
+                {% if nota.diagnostico %}
+                    <div class="nota-block">{{ nota.diagnostico }}</div>
+                {% else %}
+                    <div class="nota-block vacio">Sin diagnóstico registrado.</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <div class="info-label mb-2">Tratamiento / Solución</div>
+                {% if nota.tratamiento %}
+                    <div class="nota-block">{{ nota.tratamiento }}</div>
+                {% else %}
+                    <div class="nota-block vacio">Sin tratamiento registrado.</div>
+                {% endif %}
+            </div>
+
+            <div class="mb-4">
+                <div class="info-label mb-2">Receta</div>
+                {% if nota.receta %}
+                    <div class="nota-block">{{ nota.receta }}</div>
+                {% else %}
+                    <div class="nota-block vacio">Sin receta registrada.</div>
+                {% endif %}
+            </div>
+
+            {% if nota.requiere_seguimiento %}
+            <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3"
+                 style="background:var(--mc-warning-soft);border:1px solid var(--mc-warning);">
+                <i class="fas fa-calendar-plus" style="color:var(--mc-warning);"></i>
+                <span class="fw-semibold small" style="color:var(--mc-warning);">
+                    Seguimiento requerido el {{ nota.fecha_seguimiento|date:"d/m/Y"|default:"fecha por confirmar" }}
+                </span>
+            </div>
+            {% endif %}
+
+            <p class="small mt-3 mb-0" style="color:var(--mc-text-muted);">
+                <i class="fas fa-clock me-1"></i>
+                Nota registrada el {{ nota.updated_at|date:"d/m/Y \a \l\a\s H:i" }}
+            </p>
+
+        {% else %}
+            <div class="text-center py-3" style="color:var(--mc-text-muted);">
+                <i class="fas fa-file-medical fa-2x mb-2" style="opacity:.3;"></i>
+                <p class="small mb-0">El médico aún no ha registrado la nota clínica.</p>
+            </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- AVISO si está en consulta -->
+    {% if cita.estado == 'en_consulta' %}
+    <div class="p-4 rounded-4 text-center" style="background:var(--mc-warning-soft);border:1px solid var(--mc-warning);">
+        <i class="fas fa-stethoscope fa-2x mb-2" style="color:var(--mc-warning);"></i>
+        <h6 class="fw-bold mb-1" style="color:var(--mc-warning);">Tu consulta está en progreso</h6>
+        <p class="small mb-0" style="color:var(--mc-warning);">
+            El médico está atendiendo tu caso. El resultado estará disponible al finalizar.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- AVISO si está cancelada -->
+    {% if cita.estado == 'cancelada' %}
+    <div class="p-4 rounded-4 text-center" style="background:var(--mc-danger-soft);border:1px solid var(--mc-danger);">
+        <i class="fas fa-ban fa-2x mb-2" style="color:var(--mc-danger);"></i>
+        <h6 class="fw-bold mb-1" style="color:var(--mc-danger);">Esta cita fue cancelada</h6>
+        <p class="small mb-0" style="color:var(--mc-danger);">
+            Si necesitas atención, puedes agendar una nueva cita.
+        </p>
+    </div>
+    <div class="text-center mt-3">
+        <a href="{% url 'citas:agendar_cita' %}" class="btn btn-primary rounded-pill px-4">
+            <i class="fas fa-plus me-2"></i>Agendar nueva cita
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

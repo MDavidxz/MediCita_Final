@@ -1,0 +1,69 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Completar Perfil Médico | Medicita{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;margin:3rem auto;">
+
+    <div class="text-center mb-4">
+        <div style="width:72px;height:72px;background:var(--mc-primary-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+            <i class="fas fa-user-md fa-2x" style="color:var(--mc-primary);"></i>
+        </div>
+        <h3 class="fw-bold" style="color:var(--mc-text);">Completa tu perfil médico</h3>
+        <p style="color:var(--mc-text-muted);">
+            Antes de acceder al portal, necesitamos algunos datos sobre tu ejercicio profesional.
+        </p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show rounded-3 mb-3">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:18px;padding:2rem;box-shadow:var(--mc-shadow);">
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold" style="color:var(--mc-text);">
+                    <i class="fas fa-stethoscope me-2" style="color:var(--mc-primary);"></i>Especialidad médica
+                </label>
+                <select name="especialidad_id" class="form-select" required>
+                    <option value="">-- Selecciona tu especialidad --</option>
+                    {% for esp in especialidades %}
+                        <option value="{{ esp.id }}">{{ esp.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold" style="color:var(--mc-text);">
+                    <i class="fas fa-id-card me-2" style="color:var(--mc-primary);"></i>Número de licencia médica
+                </label>
+                <input type="text" name="licencia" class="form-control"
+                       placeholder="Ej: LM-12345" required
+                       value="{{ medico.licencia }}">
+                <small style="color:var(--mc-text-muted);">Tu número de registro profesional oficial.</small>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold" style="color:var(--mc-text);">
+                    <i class="fas fa-align-left me-2" style="color:var(--mc-primary);"></i>Descripción breve
+                    <span style="color:var(--mc-text-muted);font-weight:400;">(opcional)</span>
+                </label>
+                <textarea name="descripcion" class="form-control" rows="3"
+                          placeholder="Escribe una breve descripción sobre tu práctica médica...">{{ medico.descripcion }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                <i class="fas fa-check me-2"></i>Guardar y acceder al portal
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

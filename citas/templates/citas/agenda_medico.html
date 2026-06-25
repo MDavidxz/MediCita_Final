@@ -1,0 +1,264 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Mi Agenda | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+.filtro-btn {
+    border: 1.5px solid var(--mc-border);
+    background: var(--mc-surface);
+    color: var(--mc-text-muted);
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-weight: 600;
+    font-size: .85rem;
+    transition: var(--mc-transition);
+    text-decoration: none;
+}
+.filtro-btn:hover, .filtro-btn.active {
+    background: var(--mc-primary);
+    border-color: var(--mc-primary);
+    color: #fff;
+}
+
+.cita-card {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 14px;
+    padding: 1.1rem 1.4rem;
+    transition: var(--mc-transition);
+    text-decoration: none;
+    display: block;
+    color: inherit;
+}
+.cita-card:hover {
+    box-shadow: var(--mc-shadow);
+    border-color: var(--mc-primary);
+    color: inherit;
+}
+.cita-card.pasada {
+    opacity: .7;
+    border-style: dashed;
+}
+
+.hora-chip {
+    background: var(--mc-primary-soft);
+    color: var(--mc-primary);
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-weight: 700;
+    font-size: .85rem;
+    white-space: nowrap;
+}
+.hora-chip.pasada {
+    background: var(--mc-surface-2);
+    color: var(--mc-text-muted);
+}
+
+.badge-confirmada  { background: var(--mc-primary-soft); color: var(--mc-primary);    border-radius:20px; padding:3px 12px; font-size:.78rem; font-weight:600; }
+.badge-en_consulta { background: var(--mc-warning-soft); color: var(--mc-warning);    border-radius:20px; padding:3px 12px; font-size:.78rem; font-weight:600; }
+.badge-atendida    { background: var(--mc-success-soft); color: var(--mc-success);    border-radius:20px; padding:3px 12px; font-size:.78rem; font-weight:600; }
+.badge-cancelada   { background: var(--mc-danger-soft);  color: var(--mc-danger);     border-radius:20px; padding:3px 12px; font-size:.78rem; font-weight:600; }
+.badge-pendiente   { background: var(--mc-surface-2);    color: var(--mc-text-muted); border-radius:20px; padding:3px 12px; font-size:.78rem; font-weight:600; }
+
+.fecha-separador {
+    font-size: .75rem;
+    font-weight: 700;
+    color: var(--mc-text-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: .5rem 0 .3rem;
+    border-bottom: 1px solid var(--mc-border);
+    margin-bottom: .75rem;
+}
+
+/* Separador de sección por atender / atendidas */
+.seccion-agenda {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.seccion-agenda-titulo {
+    font-size: .92rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: 1rem;
+    padding-bottom: .75rem;
+    border-bottom: 1px solid var(--mc-border);
+}
+.count-pill {
+    margin-left: auto;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-size: .75rem;
+    font-weight: 700;
+    color: #fff;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width:900px;">
+
+    <!-- Cabecera -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1" style="color:var(--mc-text);">Mi Agenda</h3>
+            <p class="small mb-0" style="color:var(--mc-text-muted);">
+                {{ medico.nombre }} · {{ medico.especialidad.nombre }}
+            </p>
+        </div>
+        <a href="{% url 'citas:disponibilidad_medico' %}" class="btn btn-outline-primary rounded-pill btn-sm">
+            <i class="fas fa-calendar-cog me-1"></i>Disponibilidad
+        </a>
+    </div>
+
+    <!-- Filtros -->
+    <div class="d-flex gap-2 flex-wrap mb-4">
+        <a href="?filtro=hoy"    class="filtro-btn {% if filtro == 'hoy' %}active{% endif %}">
+            <i class="fas fa-sun me-1"></i>Hoy
+        </a>
+        <a href="?filtro=semana" class="filtro-btn {% if filtro == 'semana' %}active{% endif %}">
+            <i class="fas fa-calendar-week me-1"></i>Esta semana
+        </a>
+        <a href="?filtro=mes"    class="filtro-btn {% if filtro == 'mes' %}active{% endif %}">
+            <i class="fas fa-calendar-alt me-1"></i>Este mes
+        </a>
+        <a href="?filtro=todas"  class="filtro-btn {% if filtro == 'todas' %}active{% endif %}">
+            <i class="fas fa-list me-1"></i>Todas
+        </a>
+    </div>
+
+    {% if not por_atender and not ya_atendidas %}
+        <div class="text-center py-5">
+            <i class="fas fa-calendar-times fa-4x mb-3" style="color:var(--mc-text-muted);opacity:.25;"></i>
+            <h5 style="color:var(--mc-text-muted);">No hay citas en este período</h5>
+            <p class="small" style="color:var(--mc-text-muted);">Prueba otro filtro o revisa tu disponibilidad.</p>
+        </div>
+    {% else %}
+
+        <!-- ══ SECCIÓN: POR ATENDER ══ -->
+        {% if por_atender %}
+        <div class="seccion-agenda">
+            <div class="seccion-agenda-titulo" style="color:var(--mc-primary);">
+                <i class="fas fa-stethoscope"></i>
+                Por atender
+                <span class="count-pill ms-auto" style="background:var(--mc-primary);">{{ por_atender|length }}</span>
+            </div>
+
+            {% regroup por_atender by fecha as grupos_atender %}
+            {% for grupo in grupos_atender %}
+                <div class="fecha-separador">
+                    {{ grupo.grouper|date:"l d \d\e F \d\e Y" }}
+                    {% if grupo.grouper == hoy %}<span style="color:var(--mc-primary);"> — Hoy</span>{% endif %}
+                </div>
+                <div class="d-flex flex-column gap-2 mb-3">
+                {% for cita in grupo.list %}
+                    <a href="{% url 'citas:detalle_cita_medico' cita.id %}" class="cita-card">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <span class="hora-chip flex-shrink-0">{{ cita.hora }}</span>
+
+                            {% if cita.paciente.profile.photo %}
+                                <img src="{{ cita.paciente.profile.photo.url }}"
+                                     class="rounded-circle flex-shrink-0" width="40" height="40"
+                                     style="object-fit:cover;border:2px solid var(--mc-border);">
+                            {% else %}
+                                <div style="width:40px;height:40px;border-radius:50%;background:var(--mc-primary-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <i class="fas fa-user small" style="color:var(--mc-primary);"></i>
+                                </div>
+                            {% endif %}
+
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" style="color:var(--mc-text);">
+                                    {{ cita.paciente.get_full_name|default:cita.paciente.username }}
+                                </div>
+                                <div class="small" style="color:var(--mc-text-muted);">{{ cita.especialidad.nombre }}</div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                {% if cita.nota_existente %}
+                                    <i class="fas fa-file-medical" style="color:var(--mc-success);" title="Tiene nota clínica"></i>
+                                {% endif %}
+                                <span class="badge-{{ cita.estado }}">
+                                    {% if cita.estado == 'confirmada' %}Confirmada
+                                    {% elif cita.estado == 'en_consulta' %}En Consulta
+                                    {% elif cita.estado == 'pendiente' %}Pendiente
+                                    {% else %}{{ cita.estado|title }}{% endif %}
+                                </span>
+                                <i class="fas fa-chevron-right small" style="color:var(--mc-text-muted);"></i>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- ══ SECCIÓN: YA ATENDIDAS / CANCELADAS ══ -->
+        {% if ya_atendidas %}
+        <div class="seccion-agenda">
+            <div class="seccion-agenda-titulo" style="color:var(--mc-text-muted);">
+                <i class="fas fa-check-double"></i>
+                Ya atendidas / canceladas
+                <span class="count-pill" style="background:var(--mc-text-muted);">{{ ya_atendidas|length }}</span>
+            </div>
+
+            {% regroup ya_atendidas by fecha as grupos_atendidas %}
+            {% for grupo in grupos_atendidas %}
+                <div class="fecha-separador">
+                    {{ grupo.grouper|date:"l d \d\e F \d\e Y" }}
+                    {% if grupo.grouper == hoy %}<span style="color:var(--mc-primary);"> — Hoy</span>{% endif %}
+                </div>
+                <div class="d-flex flex-column gap-2 mb-3">
+                {% for cita in grupo.list %}
+                    <a href="{% url 'citas:detalle_cita_medico' cita.id %}"
+                       class="cita-card pasada">
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                            <span class="hora-chip pasada flex-shrink-0">{{ cita.hora }}</span>
+
+                            {% if cita.paciente.profile.photo %}
+                                <img src="{{ cita.paciente.profile.photo.url }}"
+                                     class="rounded-circle flex-shrink-0" width="40" height="40"
+                                     style="object-fit:cover;border:2px solid var(--mc-border);opacity:.7;">
+                            {% else %}
+                                <div style="width:40px;height:40px;border-radius:50%;background:var(--mc-surface-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                    <i class="fas fa-user small" style="color:var(--mc-text-muted);"></i>
+                                </div>
+                            {% endif %}
+
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" style="color:var(--mc-text-muted);">
+                                    {{ cita.paciente.get_full_name|default:cita.paciente.username }}
+                                </div>
+                                <div class="small" style="color:var(--mc-text-muted);">{{ cita.especialidad.nombre }}</div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                {% if cita.nota_existente %}
+                                    <i class="fas fa-file-medical" style="color:var(--mc-success);" title="Tiene nota clínica"></i>
+                                {% endif %}
+                                <span class="badge-{{ cita.estado }}">
+                                    {% if cita.estado == 'atendida' %}Atendida
+                                    {% elif cita.estado == 'cancelada' %}Cancelada
+                                    {% elif cita.estado == 'confirmada' %}Sin atender
+                                    {% else %}{{ cita.estado|title }}{% endif %}
+                                </span>
+                                <i class="fas fa-chevron-right small" style="color:var(--mc-text-muted);"></i>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}s

@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Medicita{% endblock %}</title>
+    {% load static %}
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
+
+    <style>
+        /* ============================================
+           MEDICITA — SISTEMA DE COLORES + MODO OSCURO
+        ============================================ */
+        :root {
+            /* Paleta azul médica (modo claro) */
+            --mc-primary: #2563EB;
+            --mc-primary-hover: #1D4ED8;
+            --mc-primary-light: #EFF6FF;
+            --mc-primary-soft: #DBEAFE;
+            --mc-accent: #0EA5E9;
+            --mc-accent-soft: #E0F2FE;
+
+            /* Fondos y superficies */
+            --mc-bg: #F0F6FF;
+            --mc-surface: #FFFFFF;
+            --mc-surface-2: #F8FAFC;
+            --mc-border: #E2E8F0;
+
+            /* Textos */
+            --mc-text: #0F172A;
+            --mc-text-muted: #64748B;
+            --mc-text-light: #94A3B8;
+
+            /* Estados */
+            --mc-success: #10B981;
+            --mc-success-soft: #D1FAE5;
+            --mc-warning: #F59E0B;
+            --mc-warning-soft: #FEF3C7;
+            --mc-danger: #EF4444;
+            --mc-danger-soft: #FEE2E2;
+
+            /* Navbar */
+            --mc-navbar-bg: #FFFFFF;
+            --mc-navbar-border: #E2E8F0;
+            --mc-navbar-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+
+            /* Sombras */
+            --mc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+            --mc-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --mc-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.10);
+
+            /* Animaciones */
+            --mc-transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* MODO OSCURO */
+        [data-theme="dark"] {
+            --mc-primary: #3B82F6;
+            --mc-primary-hover: #2563EB;
+            --mc-primary-light: #1E3A5F;
+            --mc-primary-soft: #1E3A5F;
+            --mc-accent: #38BDF8;
+            --mc-accent-soft: #0C2340;
+
+            --mc-bg: #0B1120;
+            --mc-surface: #111827;
+            --mc-surface-2: #1F2937;
+            --mc-border: #1F2937;
+
+            --mc-text: #F1F5F9;
+            --mc-text-muted: #94A3B8;
+            --mc-text-light: #64748B;
+
+            --mc-success: #10B981;
+            --mc-success-soft: #064E3B;
+            --mc-warning: #F59E0B;
+            --mc-warning-soft: #451A03;
+            --mc-danger: #EF4444;
+            --mc-danger-soft: #450A0A;
+
+            --mc-navbar-bg: #111827;
+            --mc-navbar-border: #1F2937;
+            --mc-navbar-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+
+            --mc-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --mc-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            --mc-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ============================================
+           RESET Y BASE
+        ============================================ */
+        * {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease;
+        }
+
+        body {
+            background-color: var(--mc-bg);
+            color: var(--mc-text);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+        }
+
+        /* ============================================
+           NAVBAR
+        ============================================ */
+        .mc-navbar {
+            background: var(--mc-navbar-bg);
+            border-bottom: 1px solid var(--mc-navbar-border);
+            box-shadow: var(--mc-navbar-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .mc-navbar .navbar-brand-text span.brand-top {
+            color: var(--mc-text);
+        }
+
+        .mc-navbar .navbar-brand-text span.brand-bottom {
+            color: var(--mc-primary);
+        }
+
+        .mc-nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--mc-text-muted) !important;
+            padding: 8px 14px !important;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: var(--mc-transition);
+            gap: 3px;
+        }
+
+        .mc-nav-link i {
+            font-size: 1.15rem;
+        }
+
+        .mc-nav-link:hover {
+            color: var(--mc-primary) !important;
+            background: var(--mc-primary-light);
+        }
+
+        .mc-nav-link.active {
+            color: var(--mc-primary) !important;
+            background: var(--mc-primary-soft);
+            font-weight: 600;
+        }
+
+        /* ============================================
+           TOGGLE MODO OSCURO
+        ============================================ */
+        .theme-toggle {
+            background: var(--mc-surface-2);
+            border: 1px solid var(--mc-border);
+            border-radius: 50px;
+            padding: 5px 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--mc-text-muted);
+            transition: var(--mc-transition);
+        }
+
+        .theme-toggle:hover {
+            background: var(--mc-primary-soft);
+            color: var(--mc-primary);
+            border-color: var(--mc-primary);
+        }
+
+        .theme-toggle i {
+            font-size: 0.9rem;
+        }
+
+        /* ============================================
+           NOTIFICACIONES
+        ============================================ */
+        .notif-btn {
+            position: relative;
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--mc-surface-2);
+            border: 1px solid var(--mc-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--mc-text-muted);
+            text-decoration: none;
+            transition: var(--mc-transition);
+        }
+
+        .notif-btn:hover {
+            background: var(--mc-primary-soft);
+            color: var(--mc-primary);
+            border-color: var(--mc-primary);
+        }
+
+        .notif-btn .notif-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: var(--mc-danger);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px;
+            border: 2px solid var(--mc-navbar-bg);
+        }
+
+        /* ============================================
+           DROPDOWN USUARIO
+        ============================================ */
+        .user-dropdown .dropdown-toggle {
+            text-decoration: none;
+            color: var(--mc-text);
+        }
+
+        .user-dropdown .dropdown-toggle::after {
+            color: var(--mc-text-muted);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--mc-primary-soft);
+        }
+
+        .dropdown-menu {
+            background: var(--mc-surface);
+            border: 1px solid var(--mc-border);
+            border-radius: 14px;
+            box-shadow: var(--mc-shadow-lg);
+            padding: 8px;
+            min-width: 180px;
+        }
+
+        .dropdown-item {
+            color: var(--mc-text);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            transition: var(--mc-transition);
+        }
+
+        .dropdown-item:hover {
+            background: var(--mc-primary-light);
+            color: var(--mc-primary);
+        }
+
+        .dropdown-divider {
+            border-color: var(--mc-border);
+            margin: 4px 0;
+        }
+
+        /* ============================================
+           CARDS GLOBALES
+        ============================================ */
+        .card,
+        .mc-card {
+            background: var(--mc-surface);
+            border: 1px solid var(--mc-border);
+            border-radius: 16px;
+            box-shadow: var(--mc-shadow-sm);
+            transition: var(--mc-transition);
+        }
+
+        .mc-card:hover {
+            box-shadow: var(--mc-shadow);
+            transform: translateY(-2px);
+        }
+
+        /* ============================================
+           FORMULARIOS
+        ============================================ */
+        .form-control,
+        .form-select {
+            background: var(--mc-surface);
+            border: 1px solid var(--mc-border);
+            color: var(--mc-text);
+            border-radius: 10px;
+            transition: var(--mc-transition);
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            background: var(--mc-surface);
+            border-color: var(--mc-primary);
+            color: var(--mc-text);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .form-control::placeholder {
+            color: var(--mc-text-light);
+        }
+
+        /* ============================================
+           BOTONES
+        ============================================ */
+        .btn-primary {
+            background: linear-gradient(135deg, var(--mc-primary), var(--mc-accent));
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: var(--mc-transition);
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--mc-primary-hover), var(--mc-primary));
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline-primary {
+            border-color: var(--mc-primary);
+            color: var(--mc-primary);
+            border-radius: 50px;
+            font-weight: 600;
+            transition: var(--mc-transition);
+        }
+
+        .btn-outline-primary:hover {
+            background: var(--mc-primary);
+            border-color: var(--mc-primary);
+            transform: translateY(-1px);
+        }
+
+        /* ============================================
+           TEXTOS Y BADGES
+        ============================================ */
+        .text-muted {
+            color: var(--mc-text-muted) !important;
+        }
+
+        .badge-confirmada {
+            background: var(--mc-success-soft);
+            color: var(--mc-success);
+            border-radius: 50px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pendiente {
+            background: var(--mc-warning-soft);
+            color: var(--mc-warning);
+            border-radius: 50px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-cancelada {
+            background: var(--mc-danger-soft);
+            color: var(--mc-danger);
+            border-radius: 50px;
+            padding: 4px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        /* ============================================
+           ANIMACIONES GLOBALES
+        ============================================ */
+
+        /* Fade in al cargar páginas */
+        .mc-page-enter {
+            animation: mcFadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        @keyframes mcFadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards con delay escalonado */
+        .mc-stagger>*:nth-child(1) {
+            animation: mcFadeInUp 0.35s 0.05s both;
+        }
+
+        .mc-stagger>*:nth-child(2) {
+            animation: mcFadeInUp 0.35s 0.10s both;
+        }
+
+        .mc-stagger>*:nth-child(3) {
+            animation: mcFadeInUp 0.35s 0.15s both;
+        }
+
+        .mc-stagger>*:nth-child(4) {
+            animation: mcFadeInUp 0.35s 0.20s both;
+        }
+
+        .mc-stagger>*:nth-child(5) {
+            animation: mcFadeInUp 0.35s 0.25s both;
+        }
+
+        .mc-stagger>*:nth-child(6) {
+            animation: mcFadeInUp 0.35s 0.30s both;
+        }
+
+        /* Pulso suave para notificaciones */
+        @keyframes mcPulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.15);
+            }
+        }
+
+        .mc-pulse {
+            animation: mcPulse 2s ease-in-out infinite;
+        }
+
+        /* Shimmer para loading */
+        @keyframes mcShimmer {
+            0% {
+                background-position: -200% 0;
+            }
+
+            100% {
+                background-position: 200% 0;
+            }
+        }
+
+        .mc-shimmer {
+            background: linear-gradient(90deg, var(--mc-surface-2) 25%, var(--mc-border) 50%, var(--mc-surface-2) 75%);
+            background-size: 200% 100%;
+            animation: mcShimmer 1.5s infinite;
+            border-radius: 8px;
+        }
+
+        /* Bounce para iconos de acción */
+        @keyframes mcBounceIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            60% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .mc-bounce {
+            animation: mcBounceIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        /* Slide para pestañas del perfil */
+        @keyframes mcSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .mc-tab-content {
+            animation: mcSlideIn 0.25s ease both;
+        }
+
+        /* Logo blob decorativo (fondo) */
+        .mc-blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.04;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        [data-theme="dark"] .mc-blob {
+            opacity: 0.06;
+        }
+
+        /* Scrollbar personalizada */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--mc-surface-2);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--mc-border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--mc-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Blobs decorativos de fondo -->
+    <div class="mc-blob" style="width:500px;height:500px;background:#2563EB;top:-100px;right:-100px;"></div>
+    <div class="mc-blob" style="width:400px;height:400px;background:#0EA5E9;bottom:-80px;left:-80px;"></div>
+
+    <!-- NAVBAR -->
+    <nav class="mc-navbar py-2">
+        <div class="container d-flex align-items-center justify-content-between" style="max-width:1280px;">
+
+            <!-- Logo -->
+            <div class="d-flex align-items-center gap-2">
+                <div style="width:42px;height:42px;display:flex;align-items:center;justify-content:center;">
+                    {% load static %}
+                    <img src="{% static 'accounts/css/img/x3Dom-removebg-preview.png' %}" alt="Logo"
+                        style="width:100%;height:100%;object-fit:contain;">
+                </div>
+                <div class="navbar-brand-text">
+                    <span class="fw-bold fs-5 brand-top d-block" style="line-height:1.1;">Portal de Salud</span>
+                    <span class="fw-bold brand-bottom" style="font-size:0.85rem;">Medicita</span>
+                </div>
+            </div>
+
+            <!-- Menú central -->
+            <ul class="navbar-nav flex-row gap-1 mb-0">
+                {% if user.is_staff and not user.is_superuser %}
+                <!-- MENÚ MÉDICO -->
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'home_medico' %}active{% endif %}"
+                        href="{% url 'citas:home_medico' %}">
+                        <i class="fas fa-home"></i><span>Inicio</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'agenda_medico' %}active{% endif %}"
+                        href="{% url 'citas:agenda_medico' %}">
+                        <i class="fas fa-calendar-check"></i><span>Mi Agenda</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'chat' %}active{% endif %}"
+                        href="{% url 'citas:chat' %}">
+                        <i class="fas fa-comments"></i><span>Mensajes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
+                        href="{% url 'citas:perfil' %}">
+                        <i class="fas fa-user"></i><span>Perfil</span>
+                    </a>
+                </li>
+                {% else %}
+                <!-- MENÚ PACIENTE / ADMIN -->
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+                        href="{% url 'citas:home' %}">
+                        <i class="fas fa-home"></i><span>Inicio</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'mis_citas' %}active{% endif %}"
+                        href="{% url 'citas:mis_citas' %}">
+                        <i class="fas fa-calendar-check"></i><span>Mis Citas</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'agendar_cita' %}active{% endif %}"
+                        href="{% url 'citas:agendar_cita' %}">
+                        <i class="fas fa-plus-circle"></i><span>Agendar</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'chat' %}active{% endif %}"
+                        href="{% url 'citas:chat' %}">
+                        <i class="fas fa-comments"></i><span>Mensajes</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="mc-nav-link {% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
+                        href="{% url 'citas:perfil' %}">
+                        <i class="fas fa-user"></i><span>Perfil</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+
+            <!-- Derecha: toggle + notif + usuario -->
+            <div class="d-flex align-items-center gap-3">
+
+                <!-- Toggle modo oscuro/claro -->
+                <button class="theme-toggle border-0" onclick="toggleTheme()" id="themeToggle">
+                    <i class="fas fa-sun" id="themeIcon"></i>
+                    <span id="themeLabel">Claro</span>
+                </button>
+
+                <!-- Notificaciones -->
+                <a href="{% url 'citas:chat' %}" class="notif-btn">
+                    <i class="fas fa-bell" id="bellIcon"></i>
+                    <span id="notifBadge" class="notif-badge d-none">0</span>
+                </a>
+
+                <!-- Usuario -->
+                <div class="dropdown user-dropdown">
+                    <a href="#" class="d-flex align-items-center gap-2 dropdown-toggle" data-bs-toggle="dropdown">
+                        {% if user.profile.photo %}
+                        <img src="{{ user.profile.photo.url }}" class="user-avatar" alt="">
+                        {% else %}
+                        <img src="{{ default_avatar_url }}" class="user-avatar" alt="">
+                        {% endif %}
+                        <span class="fw-semibold d-none d-md-inline" style="color:var(--mc-text);font-size:0.875rem;">
+                            {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %}
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <div class="px-3 py-2 border-bottom" style="border-color:var(--mc-border)!important;">
+                                <div class="fw-semibold" style="font-size:0.875rem;color:var(--mc-text);">
+                                    {{user.get_username|default:user.get_username }}</div>
+                                <div style="font-size:0.75rem;color:var(--mc-text-muted);">{{ user.email }}</div>
+                            </div>
+                        </li>
+                        <li><a class="dropdown-item mt-1" href="{% url 'citas:perfil' %}"><i
+                                    class="fas fa-user me-2"></i>Mi Perfil</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <form method="POST" action="{% url 'logout' %}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit"
+                                    class="dropdown-item text-danger border-0 bg-transparent w-100 text-start">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Cerrar sesión
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- CONTENIDO PRINCIPAL -->
+
+    {% if messages and not hide_django_messages %}
+    <div class="mb-3">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show rounded-3 mc-bounce"
+            role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}<div style="height: 15px;"></div>
+
+    {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // ============================================
+        // MODO OSCURO / CLARO
+        // ============================================
+        const html = document.documentElement;
+        const themeIcon = document.getElementById('themeIcon');
+        const themeLabel = document.getElementById('themeLabel');
+        const themeToggle = document.getElementById('themeToggle');
+
+        function applyTheme(theme) {
+            html.setAttribute('data-theme', theme);
+            localStorage.setItem('mc-theme', theme);
+            if (theme === 'dark') {
+                themeIcon.className = 'fas fa-moon';
+                themeLabel.textContent = 'Oscuro';
+            } else {
+                themeIcon.className = 'fas fa-sun';
+                themeLabel.textContent = 'Claro';
+            }
+        }
+
+        function toggleTheme() {
+            const current = html.getAttribute('data-theme') || 'light';
+            applyTheme(current === 'light' ? 'dark' : 'light');
+        }
+
+        // Cargar tema guardado al iniciar
+        (function () {
+            const saved = localStorage.getItem('mc-theme') || 'light';
+            applyTheme(saved);
+        })();
+
+        // ============================================
+        // NOTIFICACIONES
+        // ============================================
+        function pollNotificaciones() {
+            fetch("{% url 'citas:notificaciones_poll' %}")
+                .then(res => res.json())
+                .then(data => {
+                    const badge = document.getElementById('notifBadge');
+                    const bellIcon = document.getElementById('bellIcon');
+                    if (data.count > 0) {
+                        badge.textContent = data.count;
+                        badge.classList.remove('d-none');
+                        bellIcon.classList.add('mc-pulse');
+                    } else {
+                        badge.classList.add('d-none');
+                        bellIcon.classList.remove('mc-pulse');
+                    }
+                })
+                .catch(err => console.error('Error notificaciones:', err));
+        }
+
+        setInterval(pollNotificaciones, 5000);
+        pollNotificaciones();
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

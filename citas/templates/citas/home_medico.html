@@ -1,0 +1,292 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Portal Médico | Medicita{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── tarjetas de estadísticas ── */
+.stat-card {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--mc-shadow-sm);
+    transition: var(--mc-transition);
+}
+.stat-card:hover { box-shadow: var(--mc-shadow); transform: translateY(-2px); }
+.stat-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* ── citas del día ── */
+.cita-row {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 14px;
+    padding: 1rem 1.25rem;
+    transition: var(--mc-transition);
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    color: inherit;
+}
+.cita-row:hover { box-shadow: var(--mc-shadow); border-color: var(--mc-primary); transform: translateX(3px); color: inherit; }
+
+.hora-badge {
+    background: var(--mc-primary-soft);
+    color: var(--mc-primary);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-weight: 700;
+    font-size: .9rem;
+    min-width: 70px;
+    text-align: center;
+}
+
+/* ── estados ── */
+.badge-confirmada  { background: var(--mc-primary-soft);  color: var(--mc-primary); }
+.badge-en_consulta { background: var(--mc-warning-soft);  color: var(--mc-warning); }
+.badge-atendida    { background: var(--mc-success-soft);  color: var(--mc-success); }
+.badge-cancelada   { background: var(--mc-danger-soft);   color: var(--mc-danger);  }
+.badge-pendiente   { background: var(--mc-surface-2);     color: var(--mc-text-muted); }
+
+.estado-pill {
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: .78rem;
+    font-weight: 600;
+}
+
+/* ── próximas citas sidebar ── */
+.proxima-item {
+    border-left: 3px solid var(--mc-primary);
+    padding: .6rem 1rem;
+    background: var(--mc-surface-2);
+    border-radius: 0 10px 10px 0;
+    margin-bottom: .6rem;
+}
+
+.seccion-titulo {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--mc-text);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4" style="max-width:1400px;">
+
+    <!-- CABECERA -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1" style="color:var(--mc-text);">
+                Bienvenido, Dr. {{ medico.nombre }}
+            </h3>
+            <p class="mb-0 small" style="color:var(--mc-text-muted);">
+                {{ medico.especialidad.nombre }} &nbsp;·&nbsp; {{ hoy|date:"l, d \d\e F \d\e Y" }}
+            </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{% url 'citas:disponibilidad_medico' %}" class="btn btn-outline-primary rounded-pill">
+                <i class="fas fa-calendar-cog me-2"></i>Mi Disponibilidad
+            </a>
+            <a href="{% url 'citas:agenda_medico' %}" class="btn btn-primary rounded-pill">
+                <i class="fas fa-list-alt me-2"></i>Ver Agenda
+            </a>
+        </div>
+    </div>
+
+    <!-- ESTADÍSTICAS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background:var(--mc-primary-soft);">
+                        <i class="fas fa-calendar-day" style="color:var(--mc-primary);"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-4" style="color:var(--mc-text);">{{ citas_hoy|length }}</div>
+                        <div class="small" style="color:var(--mc-text-muted);">Citas hoy</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background:var(--mc-warning-soft);">
+                        <i class="fas fa-hourglass-half" style="color:var(--mc-warning);"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-4" style="color:var(--mc-text);">{{ citas_pendientes }}</div>
+                        <div class="small" style="color:var(--mc-text-muted);">Pendientes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background:var(--mc-success-soft);">
+                        <i class="fas fa-check-double" style="color:var(--mc-success);"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-4" style="color:var(--mc-text);">{{ citas_atendidas }}</div>
+                        <div class="small" style="color:var(--mc-text-muted);">Atendidas</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="stat-icon" style="background:var(--mc-accent)20;">
+                        <i class="fas fa-users" style="color:var(--mc-accent);"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold fs-4" style="color:var(--mc-text);">{{ total_pacientes }}</div>
+                        <div class="small" style="color:var(--mc-text-muted);">Pacientes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- CITAS DE HOY (columna principal) -->
+        <div class="col-lg-8">
+            <div class="p-4" style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:18px;box-shadow:var(--mc-shadow-sm);">
+                <div class="seccion-titulo">
+                    <i class="fas fa-stethoscope" style="color:var(--mc-primary);"></i>
+                    Citas de hoy
+                    <span class="badge rounded-pill ms-auto" style="background:var(--mc-primary);color:#fff;font-size:.75rem;">
+                        {{ citas_hoy|length }}
+                    </span>
+                </div>
+
+                {% if citas_hoy %}
+                    <div class="d-flex flex-column gap-3">
+                    {% for cita in citas_hoy %}
+                        <a href="{% url 'citas:detalle_cita_medico' cita.id %}" class="cita-row">
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+
+                                <!-- hora -->
+                                <div class="hora-badge flex-shrink-0">{{ cita.hora }}</div>
+
+                                <!-- avatar -->
+                                <div class="flex-shrink-0">
+                                    {% if cita.paciente.profile.photo %}
+                                        <img src="{{ cita.paciente.profile.photo.url }}"
+                                             class="rounded-circle" width="44" height="44"
+                                             style="object-fit:cover;border:2px solid var(--mc-border);">
+                                    {% else %}
+                                        <div style="width:44px;height:44px;border-radius:50%;background:var(--mc-primary-soft);display:flex;align-items:center;justify-content:center;">
+                                            <i class="fas fa-user" style="color:var(--mc-primary);"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- datos -->
+                                <div class="flex-grow-1 min-width-0">
+                                    <div class="fw-semibold" style="color:var(--mc-text);">
+                                        {{ cita.paciente.get_full_name|default:cita.paciente.username }}
+                                    </div>
+                                    <div class="small" style="color:var(--mc-text-muted);">
+                                        {{ cita.especialidad.nombre }}
+                                    </div>
+                                </div>
+
+                                <!-- estado -->
+                                <div class="flex-shrink-0 d-flex align-items-center gap-2">
+                                    <span class="estado-pill badge-{{ cita.estado }}">
+                                        {% if cita.estado == 'confirmada' %}Confirmada
+                                        {% elif cita.estado == 'en_consulta' %}En Consulta
+                                        {% elif cita.estado == 'atendida' %}Atendida
+                                        {% else %}{{ cita.estado|title }}{% endif %}
+                                    </span>
+                                    {% if cita.nota_existente %}
+                                        <i class="fas fa-file-medical small" style="color:var(--mc-success);" title="Tiene nota clínica"></i>
+                                    {% endif %}
+                                    <i class="fas fa-chevron-right small" style="color:var(--mc-text-muted);"></i>
+                                </div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-times fa-3x mb-3" style="color:var(--mc-text-muted);opacity:.3;"></i>
+                        <p style="color:var(--mc-text-muted);">No tienes citas programadas para hoy.</p>
+                        <a href="{% url 'citas:disponibilidad_medico' %}" class="btn btn-outline-primary rounded-pill btn-sm">
+                            Configurar disponibilidad
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- SIDEBAR DERECHO -->
+        <div class="col-lg-4">
+
+            <!-- Mensajes -->
+            <div class="p-3 mb-3" style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:16px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fw-semibold" style="color:var(--mc-text);">
+                        <i class="fas fa-comments me-2" style="color:var(--mc-primary);"></i>Mensajes
+                    </span>
+                    {% if mensajes_nuevos > 0 %}
+                        <span class="badge rounded-pill" style="background:var(--mc-danger);color:#fff;">{{ mensajes_nuevos }}</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'citas:chat' %}" class="btn btn-outline-primary w-100 rounded-pill mt-2 btn-sm">
+                    Ver mensajes
+                </a>
+            </div>
+
+            <!-- Próximas citas -->
+            <div class="p-4" style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:16px;">
+                <div class="seccion-titulo">
+                    <i class="fas fa-calendar-alt" style="color:var(--mc-primary);"></i>
+                    Próximas citas
+                </div>
+
+                {% if proximas_citas %}
+                    {% for cita in proximas_citas %}
+                    <a href="{% url 'citas:detalle_cita_medico' cita.id %}" class="text-decoration-none">
+                        <div class="proxima-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <div class="fw-semibold small" style="color:var(--mc-text);">
+                                        {{ cita.paciente.get_full_name|default:cita.paciente.username }}
+                                    </div>
+                                    <div class="small" style="color:var(--mc-text-muted);">
+                                        {{ cita.fecha|date:"d M" }} · {{ cita.hora }}
+                                    </div>
+                                </div>
+                                <span class="estado-pill badge-{{ cita.estado }} small">
+                                    {{ cita.estado|title }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                    <a href="{% url 'citas:agenda_medico' %}" class="btn btn-outline-secondary w-100 rounded-pill btn-sm mt-2">
+                        Ver agenda completa
+                    </a>
+                {% else %}
+                    <p class="small text-center py-2" style="color:var(--mc-text-muted);">Sin próximas citas.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Mis Citas | Medicita{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 1100px;">
+
+    <div class="mb-4">
+        <h3 class="fw-bold mb-1" style="color:var(--mc-text);">Mis Citas</h3>
+        <p style="color:var(--mc-text-muted);">Administra tus citas médicas</p>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show rounded-3 mb-3" role="alert">
+                <i class="fas fa-{% if message.tags == 'error' %}exclamation-circle{% else %}check-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if citas %}
+        <div class="row g-4 mc-stagger">
+            {% for cita in citas %}
+
+            {# ── determinar si la cita es modificable ── #}
+            {% if cita.estado == 'atendida' or cita.estado == 'en_consulta' or cita.estado == 'cancelada' %}
+                {% comment %}SOLO LECTURA{% endcomment %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="h-100 position-relative"
+                         style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:18px;padding:1.5rem;box-shadow:var(--mc-shadow-sm);transition:var(--mc-transition);"
+                         onmouseover="this.style.boxShadow='var(--mc-shadow)';this.style.transform='translateY(-3px)';"
+                         onmouseout="this.style.boxShadow='var(--mc-shadow-sm)';this.style.transform='translateY(0)';">
+
+                        {% if cita.estado == 'atendida' %}
+                        <div class="position-absolute top-0 start-0 w-100" style="height:4px;background:var(--mc-success);border-radius:18px 18px 0 0;"></div>
+                        {% elif cita.estado == 'en_consulta' %}
+                        <div class="position-absolute top-0 start-0 w-100" style="height:4px;background:var(--mc-warning);border-radius:18px 18px 0 0;"></div>
+                        {% elif cita.estado == 'cancelada' %}
+                        <div class="position-absolute top-0 start-0 w-100" style="height:4px;background:var(--mc-danger);border-radius:18px 18px 0 0;"></div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-start mb-3 mt-1">
+                            <div>
+                                <h5 class="mb-1 fw-bold" style="color:var(--mc-text);font-size:1rem;">{{ cita.especialidad.nombre }}</h5>
+                                <p class="mb-0 small" style="color:var(--mc-text-muted);">Dr. {{ cita.medico.nombre }}</p>
+                            </div>
+                            <div class="d-flex flex-column align-items-end gap-2">
+                                <span class="estado-{{ cita.estado }}">
+                                    {% if cita.estado == 'atendida' %}Finalizada
+                                    {% elif cita.estado == 'en_consulta' %}En Consulta
+                                    {% elif cita.estado == 'cancelada' %}Cancelada
+                                    {% else %}{{ cita.estado|title }}{% endif %}
+                                </span>
+                                {# solo se puede eliminar si está cancelada o atendida #}
+                                {% if cita.estado == 'cancelada' or cita.estado == 'atendida' %}
+                                <a href="{% url 'citas:eliminar_cita' cita.id %}"
+                                   class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                                   style="width:30px;height:30px;background:var(--mc-danger-soft);color:var(--mc-danger);border:1px solid var(--mc-danger-soft);"
+                                   title="Eliminar permanentemente"
+                                   onclick="return confirm('¿Eliminar esta cita permanentemente?');">
+                                    <i class="fas fa-trash" style="font-size:0.7rem;"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="py-2 mb-3" style="border-top:1px solid var(--mc-border);border-bottom:1px solid var(--mc-border);">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <small style="color:var(--mc-text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.4px;">Fecha</small>
+                                    <div class="fw-semibold" style="color:var(--mc-text);font-size:0.875rem;">{{ cita.fecha|date:"d M Y" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small style="color:var(--mc-text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.4px;">Hora</small>
+                                    <div class="fw-semibold" style="color:var(--mc-primary);font-size:0.875rem;">{{ cita.hora }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# BOTONES SOLO LECTURA #}
+                        {% if cita.estado == 'atendida' %}
+                        <a href="{% url 'citas:ver_cita' cita.id %}"
+                           class="btn btn-sm rounded-pill w-100"
+                           style="background:var(--mc-success-soft);color:var(--mc-success);border:1px solid var(--mc-success-soft);font-weight:600;">
+                            <i class="fas fa-file-medical me-1"></i> Ver detalle y diagnóstico
+                        </a>
+                        {% elif cita.estado == 'en_consulta' %}
+                        <div class="text-center py-1">
+                            <span class="small fw-semibold" style="color:var(--mc-warning);">
+                                <i class="fas fa-stethoscope me-1"></i>Consulta en progreso
+                            </span>
+                        </div>
+                        {% elif cita.estado == 'cancelada' %}
+                        <div class="text-center py-1">
+                            <span class="small" style="color:var(--mc-text-muted);">
+                                <i class="fas fa-ban me-1"></i>Cita cancelada
+                            </span>
+                        </div>
+                        {% endif %}
+
+                    </div>
+                </div>
+
+            {% else %}
+                {# ── EDITABLE: pendiente o confirmada ── #}
+                <div class="col-md-6 col-lg-4">
+                    <div class="h-100"
+                         style="background:var(--mc-surface);border:1px solid var(--mc-border);border-radius:18px;padding:1.5rem;box-shadow:var(--mc-shadow-sm);transition:var(--mc-transition);"
+                         onmouseover="this.style.boxShadow='var(--mc-shadow)';this.style.transform='translateY(-3px)';"
+                         onmouseout="this.style.boxShadow='var(--mc-shadow-sm)';this.style.transform='translateY(0)';">
+
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="mb-1 fw-bold" style="color:var(--mc-text);font-size:1rem;">{{ cita.especialidad.nombre }}</h5>
+                                <p class="mb-0 small" style="color:var(--mc-text-muted);">Dr. {{ cita.medico.nombre }}</p>
+                            </div>
+                            <div class="d-flex flex-column align-items-end gap-2">
+                                <span class="estado-{{ cita.estado }}">{{ cita.estado|title }}</span>
+                                <a href="{% url 'citas:eliminar_cita' cita.id %}"
+                                   class="btn btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                                   style="width:30px;height:30px;background:var(--mc-danger-soft);color:var(--mc-danger);border:1px solid var(--mc-danger-soft);"
+                                   title="Eliminar permanentemente"
+                                   onclick="return confirm('¿Eliminar esta cita permanentemente?');">
+                                    <i class="fas fa-trash" style="font-size:0.7rem;"></i>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="py-2 mb-2" style="border-top:1px solid var(--mc-border);border-bottom:1px solid var(--mc-border);">
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <small style="color:var(--mc-text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.4px;">Fecha</small>
+                                    <div class="fw-semibold" style="color:var(--mc-text);font-size:0.875rem;">{{ cita.fecha|date:"d M Y" }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small style="color:var(--mc-text-muted);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.4px;">Hora</small>
+                                    <div class="fw-semibold" style="color:var(--mc-primary);font-size:0.875rem;">{{ cita.hora }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-3">
+                            <a href="{% url 'citas:editar_cita' cita.id %}"
+                               class="btn btn-primary rounded-pill btn-sm flex-fill">
+                                <i class="fas fa-edit me-1"></i> Editar
+                            </a>
+                            <a href="{% url 'citas:cancelar_cita' cita.id %}"
+                               class="btn btn-sm rounded-pill flex-fill"
+                               style="background:var(--mc-danger-soft);color:var(--mc-danger);border:1px solid var(--mc-danger-soft);"
+                               onclick="return confirm('¿Cancelar esta cita?');">
+                                <i class="fas fa-times me-1"></i> Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-calendar-times fa-4x mb-3" style="color:var(--mc-border);"></i>
+            <h5 style="color:var(--mc-text);">No tienes citas agendadas</h5>
+            <p style="color:var(--mc-text-muted);">Agenda tu primera cita médica.</p>
+            <a href="{% url 'citas:agendar_cita' %}" class="btn btn-primary mt-2 px-4">
+                <i class="fas fa-plus me-2"></i>Agendar mi primera cita
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,318 @@
+{% extends "citas/base.html" %}
+{% load static %}
+
+{% block title %}Agendar Cita | Medicita{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'citas/css/citas.css' %}" />
+<style>
+    .step.completed .step-circle { background: var(--mc-success) !important; border-color: var(--mc-success) !important; color: #fff !important; }
+    .step.active   .step-circle { background: var(--mc-primary) !important; border-color: var(--mc-primary) !important; color: #fff !important; }
+    .step.completed .step-label,
+    .step.active    .step-label { color: var(--mc-text); font-weight: 600; }
+
+    .info-panel-icon {
+        width: 72px; height: 72px;
+        background: var(--mc-primary-soft);
+        border-radius: 9999px;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    .info-panel-shield {
+        background: var(--mc-surface-2);
+        border: 1px solid var(--mc-border);
+        border-radius: 12px;
+        padding: 10px 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 1280px; position: relative">
+
+    <!-- Blobs decorativos -->
+    <div class="decorative-blob" style="width:420px;height:420px;background:#4a7dff;top:-80px;right:-120px;"></div>
+    <div class="decorative-blob" style="width:320px;height:320px;background:#a5b4fc;bottom:-60px;left:-80px;"></div>
+
+    <!-- HEADER -->
+    <div class="welcome-header">
+        <h1 class="fw-bold">¡Bienvenido de nuevo, {{ user }}!</h1>
+        <p class="mb-0">Gestiona tus citas médicas de forma fácil y rápida.</p>
+    </div>
+
+    <div class="row g-4">
+        <!-- SIDEBAR IZQUIERDO -->
+        <div class="col-lg-4">
+
+            <!-- Próximas Citas -->
+            <div class="sidebar-card p-4 mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0" style="color:var(--mc-text);">
+                        <i class="fas fa-calendar-check me-2" style="color:var(--mc-primary);"></i>Próximas Citas
+                    </h6>
+                    <span class="badge rounded-pill px-2" style="background:var(--mc-primary-soft);color:var(--mc-primary);">
+                        {{ proximas_citas|length }}
+                    </span>
+                </div>
+
+                {% for cita in proximas_citas %}
+                <a href="{% url 'citas:editar_cita' cita.id %}" class="text-decoration-none">
+                    <div class="proxima-cita rounded-4 p-3 mb-3">
+                        <div class="d-flex gap-3">
+                            <div class="text-center" style="min-width:52px;">
+                                <div class="fw-bold" style="font-size:1.35rem;line-height:1;color:var(--mc-primary);">
+                                    {{ cita.fecha|date:"d" }}
+                                </div>
+                                <div class="small" style="color:var(--mc-text-muted);">{{ cita.fecha|date:"M"|upper }}</div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold" style="color:var(--mc-text);">Dr. {{ cita.medico.nombre }}</div>
+                                <div class="small" style="color:var(--mc-text-muted);">
+                                    {{ cita.especialidad.nombre }} • {{ cita.medico.hospital }}
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="fw-medium small" style="color:var(--mc-text);">{{ cita.hora }}</span>
+                                    <span class="estado-{{ cita.estado }}">{{ cita.estado|title }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <p class="small" style="color:var(--mc-text-muted);">No tienes próximas citas.</p>
+                {% endfor %}
+
+                <a href="{% url 'citas:mis_citas' %}" class="btn btn-outline-primary w-100 mt-2 rounded-pill fw-semibold py-2">
+                    Ver todas las citas <i class="fas fa-arrow-right ms-2 small"></i>
+                </a>
+            </div>
+
+            <!-- Ayuda -->
+            <div class="sidebar-card p-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div style="background:var(--mc-primary-soft);border-radius:10px;padding:10px;">
+                        <i class="fas fa-headset fa-lg" style="color:var(--mc-primary);"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-0" style="color:var(--mc-text);">¿Necesitas ayuda?</h6>
+                        <p class="small mb-0" style="color:var(--mc-text-muted);">Estamos aquí para ayudarte.</p>
+                    </div>
+                </div>
+                <a href="https://wa.me/59176350619?text=Hola,%20necesito%20ayuda%20con%20Medicita"
+                   target="_blank" class="btn btn-outline-secondary w-100 rounded-pill">
+                    Contactar soporte
+                </a>
+            </div>
+
+        </div>
+
+        <!-- WIZARD PRINCIPAL -->
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <h4 class="fw-bold mb-1" style="color:var(--mc-text);">Agendar Nueva Cita</h4>
+            </div>
+
+            <!-- STEPPER -->
+            <div class="stepper" id="stepper">
+                <div class="step active" data-step="1">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Especialidad</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Médico</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Fecha</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">Hora</div>
+                </div>
+            </div>
+
+            <!-- PASO 1: ESPECIALIDAD -->
+            <div id="step-1" class="step-content">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <h6 class="fw-bold mb-3" style="color:var(--mc-text);">Selecciona la especialidad</h6>
+                        <div class="row row-cols-2 row-cols-md-3 g-3" id="especialidades-grid"></div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="sidebar-card p-4 h-100">
+                            <div class="text-center mb-4">
+                                <div class="info-panel-icon mx-auto mb-3">
+                                    <i class="fas fa-calendar-alt fa-3x" style="color:var(--mc-primary);"></i>
+                                </div>
+                                <h6 class="fw-bold" style="color:var(--mc-text);">Agenda tu cita fácilmente</h6>
+                            </div>
+                            <ul class="list-unstyled small mb-4">
+                                <li class="d-flex align-items-center gap-2 mb-2" style="color:var(--mc-text-muted);">
+                                    <i class="fas fa-check" style="color:var(--mc-success);"></i>
+                                    <span>Elige la especialidad que necesitas</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2 mb-2" style="color:var(--mc-text-muted);">
+                                    <i class="fas fa-check" style="color:var(--mc-success);"></i>
+                                    <span>Selecciona tu médico de confianza</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2 mb-2" style="color:var(--mc-text-muted);">
+                                    <i class="fas fa-check" style="color:var(--mc-success);"></i>
+                                    <span>Escoge la fecha y hora disponible</span>
+                                </li>
+                                <li class="d-flex align-items-center gap-2" style="color:var(--mc-text-muted);">
+                                    <i class="fas fa-check" style="color:var(--mc-success);"></i>
+                                    <span>Recibe confirmación al instante</span>
+                                </li>
+                            </ul>
+                            <div class="info-panel-shield d-flex align-items-center gap-2">
+                                <i class="fas fa-shield-alt" style="color:var(--mc-primary);"></i>
+                                <span class="small fw-medium" style="color:var(--mc-text-muted);">Tu información está protegida</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mt-2">
+                    <div class="col-lg-7"></div>
+                    <div class="col-lg-5">
+                        <button onclick="goToStep(2)" class="btn btn-primary w-100 py-2 fw-semibold" id="btn-next-1" disabled>
+                            Continuar <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 2: MÉDICO -->
+            <div id="step-2" class="step-content d-none">
+                <h6 class="fw-bold mb-3" style="color:var(--mc-text);">Selecciona al médico</h6>
+                <div id="medicos-list" class="d-flex flex-column gap-3"></div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button onclick="goToStep(1)" class="btn btn-outline-secondary px-4 rounded-pill">Anterior</button>
+                    <button onclick="goToStep(3)" class="btn btn-primary px-5 py-2 fw-semibold" id="btn-next-2" disabled>
+                        Ver disponibilidad <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 3: FECHA -->
+            <div id="step-3" class="step-content d-none">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <h6 class="fw-bold mb-3" style="color:var(--mc-text);">Selecciona la fecha</h6>
+                        <div class="calendar p-3 border rounded-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                                <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="prevMonth()">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <h6 class="fw-bold mb-0" id="calendar-title" style="color:var(--mc-text);"></h6>
+                                <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="nextMonth()">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                            </div>
+                            <div id="calendar-grid" class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 6px"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="resumen-card h-100">
+                            <h6 class="fw-bold mb-3" style="color:var(--mc-text);">Resumen de tu cita</h6>
+                            <div class="mb-2">
+                                <span class="small" style="color:var(--mc-text-muted);">Especialidad</span><br>
+                                <span id="res-esp" class="fw-semibold" style="color:var(--mc-text);">—</span>
+                            </div>
+                            <div class="mb-2">
+                                <span class="small" style="color:var(--mc-text-muted);">Médico</span><br>
+                                <span id="res-med" class="fw-semibold" style="color:var(--mc-text);">—</span>
+                            </div>
+                            <div>
+                                <span class="small" style="color:var(--mc-text-muted);">Fecha seleccionada</span><br>
+                                <span id="res-fecha" class="fw-semibold" style="color:var(--mc-text);">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex justify-content-between">
+                    <button onclick="goToStep(2)" class="btn btn-outline-secondary px-4 rounded-pill">Anterior</button>
+                    <button onclick="goToStep(4)" class="btn btn-primary px-5 py-2 fw-semibold" id="btn-next-3" disabled>
+                        Continuar <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- PASO 4: HORA -->
+            <div id="step-4" class="step-content d-none">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <h6 class="fw-bold mb-3" style="color:var(--mc-text);">Selecciona la hora</h6>
+                        <div class="d-flex flex-wrap gap-2" id="time-slots-grid"></div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="resumen-card">
+                            <h6 class="fw-bold mb-3" style="color:var(--mc-text);">Resumen de tu cita</h6>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span style="color:var(--mc-text-muted);">Especialidad</span>
+                                <span id="final-esp" class="fw-semibold" style="color:var(--mc-text);">—</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span style="color:var(--mc-text-muted);">Médico</span>
+                                <span id="final-med" class="fw-semibold" style="color:var(--mc-text);">—</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span style="color:var(--mc-text-muted);">Fecha</span>
+                                <span id="final-fecha" class="fw-semibold" style="color:var(--mc-text);">—</span>
+                            </div>
+                            <div class="d-flex justify-content-between py-2 border-bottom">
+                                <span style="color:var(--mc-text-muted);">Hora</span>
+                                <span id="final-hora" class="fw-semibold" style="color:var(--mc-primary);">—</span>
+                            </div>
+                            <div class="pt-3">
+                                <span class="small" style="color:var(--mc-text-muted);">Duración</span><br>
+                                <span class="fw-semibold" style="color:var(--mc-text);">30 minutos</span>
+                            </div>
+                            <button onclick="confirmarCita()" class="btn btn-success w-100 mt-4 py-2 fw-bold rounded-pill" id="btn-confirmar" disabled>
+                                Confirmar Cita
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Éxito -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4" style="background:var(--mc-surface);">
+            <div class="modal-body text-center p-5">
+                <div class="mx-auto mb-4" style="width:90px;height:90px;background:var(--mc-success-soft);border-radius:9999px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-check-circle fa-4x" style="color:var(--mc-success);"></i>
+                </div>
+                <h4 class="fw-bold" style="color:var(--mc-text);">¡Cita confirmada con éxito!</h4>
+                <p style="color:var(--mc-text-muted);">Tu cita ha sido registrada correctamente.</p>
+                <div class="rounded-3 p-3 text-start my-4 mx-auto" style="max-width:280px;background:var(--mc-surface-2);border:1px solid var(--mc-border);">
+                    <div style="color:var(--mc-text);"><strong>Código:</strong> <span id="modal-codigo" style="color:var(--mc-primary);font-weight:700;"></span></div>
+                    <div style="color:var(--mc-text);"><strong>Médico:</strong> <span id="modal-doctor"></span></div>
+                    <div style="color:var(--mc-text);"><strong>Fecha y hora:</strong> <span id="modal-datetime"></span></div>
+                </div>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" data-bs-dismiss="modal">Cerrar</button>
+                    <a href="{% url 'citas:mis_citas' %}" class="btn btn-primary px-4 rounded-pill">Ver Mis Citas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ especialidades|json_script:"especialidades-data" }}
+{{ medicos|json_script:"medicos-data" }}
+{{ citas_existentes|json_script:"citas-existentes-data" }}
+<script src="{% static 'citas/js/citas.js' %}"></script>
+{% endblock %}

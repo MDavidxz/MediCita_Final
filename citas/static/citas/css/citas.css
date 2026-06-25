@@ -1,0 +1,329 @@
+/* ============================================
+   MEDICITA - Diseño Premium (2026)
+   Adaptado para modo oscuro/claro con CSS vars
+   ============================================ */
+
+/* Heredamos las variables de base.html */
+
+body {
+    background-color: var(--mc-bg);
+    color: var(--mc-text);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Header de bienvenida */
+.welcome-header {
+    margin-bottom: 2rem;
+}
+
+.welcome-header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--mc-text);
+}
+
+.welcome-header p {
+    color: var(--mc-text-muted);
+    font-size: 1rem;
+}
+
+/* Sidebar card */
+.sidebar-card {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 20px;
+    box-shadow: var(--mc-shadow-sm);
+}
+
+/* Próxima cita */
+.proxima-cita {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border) !important;
+    border-left: 4px solid var(--mc-primary) !important;
+    transition: all 0.2s ease;
+}
+
+.proxima-cita:hover {
+    transform: translateX(4px);
+    box-shadow: var(--mc-shadow);
+}
+
+/* Estados */
+.estado-confirmada {
+    background-color: var(--mc-success-soft);
+    color: var(--mc-success);
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+.estado-pendiente {
+    background-color: var(--mc-warning-soft);
+    color: var(--mc-warning);
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+.estado-cancelada {
+    background-color: var(--mc-danger-soft);
+    color: var(--mc-danger);
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+.estado-en_consulta {
+    background-color: var(--mc-accent-soft);
+    color: var(--mc-accent);
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+.estado-atendida {
+    background-color: var(--mc-primary-soft);
+    color: var(--mc-primary);
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 9999px;
+    font-weight: 600;
+}
+
+/* ==================== STEPPER ==================== */
+.stepper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    max-width: 620px;
+    margin: 0 auto 2.5rem;
+}
+
+.stepper::before {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: 48px;
+    right: 48px;
+    height: 2px;
+    background: var(--mc-border);
+    z-index: 0;
+}
+
+.step {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    flex: 1;
+}
+
+.step-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 9999px;
+    background: var(--mc-surface);
+    border: 3px solid var(--mc-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 8px;
+    font-weight: 700;
+    color: var(--mc-text-muted);
+    transition: all 0.3s ease;
+    box-shadow: var(--mc-shadow-sm);
+}
+
+.step.active .step-circle {
+    background: var(--mc-primary);
+    border-color: var(--mc-primary);
+    color: white;
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.2);
+}
+
+.step.completed .step-circle {
+    background: var(--mc-success);
+    border-color: var(--mc-success);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--mc-text-muted);
+}
+
+.step.active .step-label,
+.step.completed .step-label {
+    color: var(--mc-text);
+}
+
+/* ==================== SPECIALTY CARDS ==================== */
+.specialty-card {
+    background: var(--mc-surface);
+    border: 2px solid var(--mc-border);
+    border-radius: 16px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.specialty-card:hover {
+    border-color: var(--mc-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--mc-shadow);
+    background: var(--mc-primary-light);
+}
+
+/* Solo borde coloreado al seleccionar, sin check-icon visible */
+.specialty-card.selected {
+    border-color: var(--mc-primary);
+    border-width: 2px;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    background: var(--mc-primary-light);
+}
+
+/* Check icon — oculto siempre, eliminado visualmente */
+.specialty-card .check-icon {
+    display: none !important;
+}
+
+.specialty-card i {
+    font-size: 2.2rem;
+    color: var(--mc-primary);
+    margin-bottom: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.specialty-card:hover i,
+.specialty-card.selected i {
+    transform: scale(1.1);
+}
+
+.specialty-card h6 {
+    color: var(--mc-text);
+    font-size: 0.85rem;
+}
+
+/* ==================== DOCTOR CARDS ==================== */
+.doctor-card {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 16px;
+    padding: 1rem 1.25rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    color: var(--mc-text);
+}
+
+.doctor-card:hover {
+    border-color: var(--mc-primary);
+    background: var(--mc-primary-light);
+    box-shadow: var(--mc-shadow);
+}
+
+.doctor-card.selected {
+    border-color: var(--mc-primary);
+    background: var(--mc-primary-light);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* ==================== TIME SLOTS ==================== */
+.time-slot {
+    background: var(--mc-surface);
+    border: 2px solid var(--mc-border);
+    border-radius: 12px;
+    padding: 12px 0;
+    font-weight: 600;
+    color: var(--mc-text);
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+
+.time-slot:hover:not(.selected):not(:disabled) {
+    border-color: var(--mc-primary);
+    background: var(--mc-primary-light);
+    color: var(--mc-primary);
+}
+
+.time-slot.selected {
+    background: var(--mc-primary);
+    color: white;
+    border-color: var(--mc-primary);
+}
+
+.time-slot:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--mc-surface-2);
+}
+
+/* ==================== RESUMEN CARD ==================== */
+.resumen-card {
+    background: var(--mc-surface);
+    border: 1px solid var(--mc-border);
+    border-radius: 20px;
+    padding: 1.5rem;
+    color: var(--mc-text);
+}
+
+.resumen-card .border-bottom {
+    border-color: var(--mc-border) !important;
+}
+
+/* ==================== CALENDAR ==================== */
+.calendar {
+    background: var(--mc-surface);
+    border-color: var(--mc-border) !important;
+}
+
+.calendar-day {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--mc-text);
+}
+
+.calendar-day:hover:not(.disabled):not(.selected) {
+    background: var(--mc-primary-soft);
+    color: var(--mc-primary);
+}
+
+.calendar-day.selected {
+    background: var(--mc-primary);
+    color: white;
+    font-weight: 700;
+}
+
+.calendar-day.disabled {
+    color: var(--mc-text-light);
+    cursor: not-allowed;
+    opacity: 0.4;
+}
+
+/* ==================== DECORATIVE BLOBS ==================== */
+.decorative-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.06;
+    z-index: 0;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .decorative-blob {
+    opacity: 0.04;
+}
